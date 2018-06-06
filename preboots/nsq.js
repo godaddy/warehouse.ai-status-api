@@ -9,7 +9,8 @@ const nsqStream = require('nsq-stream');
  * @param {Function} callback Continuation function
  */
 module.exports = function nsqboot(app, options, callback) {
-  const config = Object.assign({}, options.nsq, app.config.get('nsq'));
+  // options overrides config if passed in
+  const config = Object.assign({}, app.config.get('nsq'), options.nsq);
   if (Object.keys(config).length === 0) return callback();
   const opts = app.config.get('nsq-stream');
 
