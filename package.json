@@ -1,8 +1,11 @@
 {
   "name": "warehouse.ai-status-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "Status and build logs management for the warehouse system",
   "main": "index.js",
+  "bin": {
+    "warehouse-status": "bin/server"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,7 +15,11 @@
     "carpenterd",
     "build"
   ],
-  "author": "GoDaddy Engineers",
+  "author": "GoDaddy.com Operating Company LLC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/godaddy/warehouse.ai-status-api"
+  },
   "license": "MIT",
   "dependencies": {
     "authboot": "^1.0.0",
