@@ -1,15 +1,16 @@
 const nsq = require('nsq.js-k8');
+const nsqStream = require('nsq-stream');
 
 /**
  * Nsq preboot
  *
  * @param {slay.App} app Slay Application
  * @param {Object} options Optional Configuration
- * @param {Function} callback
+ * @param {Function} callback Continuation function
  */
 module.exports = function nsqboot(app, options, callback) {
   const config = Object.assign({}, options.nsq, app.config.get('nsq'));
-  if (Object.keys(config).length === 0) return next();
+  if (Object.keys(config).length === 0) return callback();
   const opts = app.config.get('nsq-stream');
 
   //
