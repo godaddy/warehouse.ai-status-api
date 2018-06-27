@@ -1,5 +1,8 @@
 const nsq = require('nsq.js-k8');
 const nsqStream = require('nsq-stream');
+const uuid = require('uuid');
+const { Writable } = require('stream');
+const StatusHandler = require('../status-handler.js');
 
 /**
  * Nsq preboot
@@ -33,6 +36,34 @@ module.exports = function nsqboot(app, options, callback) {
   app.nsq.reader.on('error', app.log.error.bind(app.log));
   app.nsq.reader.on('error response', app.log.error.bind(app.log));
 
+  app.nsq.handler = new StatusHandler({
+    conc: app.config.get('nsq:concurrency'),
+    models: app.models
+  })
+
+
+  const write = (data, enc, cb) => {
+    app.log.info('Event handled', data);
+    cb();
+  };
+
+  //
+  // After the server starts we will start to listen for messages
+  //
+  app.after('start', (_, __, next) => {
+    app.nsq.stream
+      .pipe(app.nsq.handler.stream())
+      .pipe(new Writable({
+        objectMode: true,
+        write
+      }))
+      .on('finish', () => {
+        setImmediate(() => app.close());
+      });
+  });
+
   callback();
 
 };
+
+

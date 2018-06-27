@@ -26,9 +26,11 @@
     "body-parser": "^1.18.3",
     "datastar": "^1.5.0",
     "nsq.js-k8": "^1.0.3",
+    "parallel-transform": "^1.1.0",
     "slay": "^1.1.0",
     "slay-config": "^2.2.0",
     "slay-log": "^2.3.0",
-    "warehouse.ai-api-client": "^3.0.1"
+    "warehouse.ai-api-client": "^3.0.1",
+    "warehouse.ai-status-models": "^1.1.0"
   }
 }

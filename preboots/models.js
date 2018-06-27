@@ -1,4 +1,5 @@
 const Datastar = require('datastar');
+const statusModels = require('warehouse.ai-status-models');
 
 /**
  * Models initializer
@@ -11,7 +12,7 @@ module.exports = function modelboot(app, options, callback) {
   const ensure = app.config.get('ensure') || options.ensure;
 
   app.datastar = new Datastar(app.config.get('datastar'));
-  app.models = models(app.datastar);
+  app.models = statusModels(app.datastar);
 
   if (!ensure) return app.datastar.connect(callback);
   app.datastar.connect(err => {
@@ -20,12 +21,3 @@ module.exports = function modelboot(app, options, callback) {
   });
 };
 
-/**
- * TODO: Add models
- *
- * @function models
- * @returns {Object} models object
- */
-function models() {
-  return {};
-}
