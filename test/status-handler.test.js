@@ -45,6 +45,22 @@ describe('Statu-Handler', function () {
         assume(headcreatestub).is.called(1);
         sinon.restore();
       });
+
+      it('should not create status when there is already a current Status record', async function () {
+        const statusMock = status._transform(fixtures.singleEvent, 'status');
+        const eventstub = sinon.stub(status.models.StatusEvent, 'create').resolves();
+        const statfindstub = sinon.stub(status.models.Status, 'findOne').resolves(statusMock);
+        const headfindstub = sinon.stub(status.models.StatusHead, 'findOne').resolves(statusMock);
+        const statcreatestub = sinon.stub(status.models.Status, 'create').resolves();
+        const headcreatestub = sinon.stub(status.models.StatusHead, 'create').resolves();
+
+        await status.event(fixtures.singleEvent);
+        assume(eventstub).is.called(1);
+        assume(statfindstub).is.called(1);
+        assume(headfindstub).is.called(1);
+        assume(statcreatestub).is.not.called();
+        assume(headcreatestub).is.not.called();
+      });
     });
 
   });
