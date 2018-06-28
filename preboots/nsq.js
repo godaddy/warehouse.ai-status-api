@@ -1,8 +1,7 @@
 const nsq = require('nsq.js-k8');
 const nsqStream = require('nsq-stream');
-const uuid = require('uuid');
 const { Writable } = require('stream');
-const StatusHandler = require('../status-handler.js');
+const StatusHandler = require('../status-handler');
 
 /**
  * Nsq preboot
@@ -10,11 +9,12 @@ const StatusHandler = require('../status-handler.js');
  * @param {slay.App} app Slay Application
  * @param {Object} options Optional Configuration
  * @param {Function} callback Continuation function
+ * @returns {undefined} nothing to see here
  */
 module.exports = function nsqboot(app, options, callback) {
   // options overrides config if passed in
   const config = Object.assign({}, app.config.get('nsq'), options.nsq);
-  if (Object.keys(config).length === 0) return callback();
+  if (Object.keys(config).length === 0) return void callback();
   const opts = app.config.get('nsq-stream');
 
   //
@@ -39,7 +39,7 @@ module.exports = function nsqboot(app, options, callback) {
   app.nsq.handler = new StatusHandler({
     conc: app.config.get('nsq:concurrency'),
     models: app.models
-  })
+  });
 
 
   const write = (data, enc, cb) => {
@@ -60,10 +60,10 @@ module.exports = function nsqboot(app, options, callback) {
       .on('finish', () => {
         setImmediate(() => app.close());
       });
+    next();
   });
 
   callback();
-
 };
 
 

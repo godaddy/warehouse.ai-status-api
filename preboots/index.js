@@ -5,7 +5,7 @@ const winston = require('winston');
  *
  * @param {slay.App} app Slay Application
  * @param {Object} options Optional configuration
- * @param {Function} calllback Continuation function
+ * @param {Function} callback Continuation function
  */
 module.exports = function preboots(app, options, callback) {
   const auth = options.auth === false ? options.auth : app.config.get('auth');

@@ -1,6 +1,5 @@
 const parallel = require('parallel-transform');
 const diagnostics = require('diagnostics');
-const thenify = require('thenify');
 const rip = require('rip-out');
 const uuid = require('uuid');
 
@@ -47,10 +46,10 @@ class StatusHandler {
    * TODO: In the future we could also dispatch out notifications etc
    *
    * @function event
-   * @param {Object}
+   * @param {Object} data - Data message to be handled from NSQ
    * @returns {Promise} to resolve
    */
-  async event (data) {
+  async event(data) {
     const { StatusEvent, StatusHead, Status } = this.models;
     const [, head, current] = await Promise.all([
       StatusEvent.create(this._transform(data, 'event')),
@@ -59,9 +58,9 @@ class StatusHandler {
     ]);
 
     if (!current) {
-      await this._status('create', {
+      return this._status('create', {
         ...this._transform(data, 'status'),
-        previousVersion: head.version
+        previousVersion: head && head.version
       });
     }
   }
@@ -72,7 +71,7 @@ class StatusHandler {
    * @param {Object} data - Message from NSQ
    * @returns {Promise} to resolve
    */
-  queued (data) {
+  queued(data) {
     // Its safe to update status here because status is created by the first
     // `event` for npm install so that we can fetch the head and handle setting
     // the previous version from the prior HEAD
@@ -89,7 +88,7 @@ class StatusHandler {
    * @param {Object} data - Message from NSQ
    * @returns {Promise} to resolve
    */
-  async error (data) {
+  async error(data) {
     const { Status } = this.models;
     data = this._transform(data, 'error');
     await this.event(data);
@@ -121,7 +120,7 @@ class StatusHandler {
     await StatusCounter.increment(spec);
     const complete = await this.isComplete(spec);
     if (!complete) return;
-    const { pkg, env, version } = transformed;
+    const { pkg, env, version } = spec;
     return Status.update({ pkg, env, version, complete, error: false });
   }
 
@@ -130,7 +129,6 @@ class StatusHandler {
    *
    * @function ignored
    * @param {Object} data - Message from NSQ
-   * @returns {Promise} to be resolved
    */
   async ignored(data) {
     this.log.info(`Ignored status event, no build occurred`, data);
@@ -140,7 +138,8 @@ class StatusHandler {
    * Create both status head and status models
    *
    * @function _status
-   * @param {Object} data - Message from NSQ
+   * @param {String} type - Type of database operation
+   * @param {Object} data - Normalized data to insert into database
    * @returns {Promise} to be resolved
    */
   _status(type, data) {
@@ -156,8 +155,10 @@ class StatusHandler {
    *
    * @function isComplete
    * @param {Object} spec - Specification to fetch Status/Counter
+   * @returns {Boolean} whether we are complete or not
    */
-  isComplete(spec) {
+  async isComplete(spec) {
+    const { StatusCounter, Status } = this.models;
     const [{ total }, { count }] = await Promise.all([StatusCounter, Status].map(m => m.findOne(spec)));
     const progress = (count / total) * 100;
     return progress === 100;
@@ -173,19 +174,18 @@ class StatusHandler {
    */
   _transform(data, type) {
     const { pkg, name, version, env, message, details, total, error, locale } = data;
-    let ret = { version, env };
+    const ret = { version, env };
     ret.pkg = pkg || name;
 
     switch (type) {
       case 'status':
         ret.total = total;
+        break;
       case 'error':
         ret.error = true;
         ret.message = message;
         ret.details = details;
         ret.locale = locale;
-        break;
-      case 'counter':
         break;
       case 'event':
         ret.message = message;
@@ -193,6 +193,9 @@ class StatusHandler {
         ret.error = error;
         ret.locale = locale;
         ret.eventId = uuid.v1();
+        break;
+      case 'counter':
+      default:
         break;
     }
     return ret;
