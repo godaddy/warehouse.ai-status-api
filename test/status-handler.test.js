@@ -7,7 +7,7 @@ const fixtures = require('./fixtures');
 
 assume.use(require('assume-sinon'));
 
-describe('Statu-Handler', function () {
+describe('Status-Handler', function () {
   describe('unit', function () {
     let status;
 
