@@ -45,6 +45,14 @@ describe('Status-Handler', function () {
         assume(transformed.details).exists();
         assume(transformed.message).exists();
       });
+
+      it('should _transform complete message for counter', function () {
+        const transformed = status._transform(fixtures.singleComplete, 'counter');
+        assume(transformed.env).exists();
+        assume(transformed.version).exists();
+        assume(transformed.pkg).exists();
+
+      });
     });
 
     describe('event', function () {
@@ -145,6 +153,10 @@ describe('Status-Handler', function () {
         assume(statusfindstub).is.called(1);
         assume(statusupdatestub).is.called(1);
         sinon.restore();
+      });
+
+      it('should error if a database call errors', async function () {
+
       });
     });
 
