@@ -215,3 +215,4 @@ class StatusHandler {
   }
 }
 
+module.exports = StatusHandler;
