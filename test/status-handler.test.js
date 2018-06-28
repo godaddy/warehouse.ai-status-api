@@ -27,6 +27,24 @@ describe('Statu-Handler', function () {
         assume(transformed.pkg).exists();
         assume(transformed.eventId).exists();
       });
+
+      it('should _transform queued message for status', function () {
+        const transformed = status._transform(fixtures.singleQueued, 'status');
+        assume(transformed.env).exists();
+        assume(transformed.version).exists();
+        assume(transformed.pkg).exists();
+        assume(transformed.total).exists();
+      });
+
+      it('should _transform error message for event', function () {
+        const transformed = status._transform(fixtures.singleError, 'error');
+        assume(transformed.env).exists();
+        assume(transformed.version).exists();
+        assume(transformed.pkg).exists();
+        assume(transformed.error).equals(true);
+        assume(transformed.details).exists();
+        assume(transformed.message).exists();
+      });
     });
 
     describe('event', function () {
@@ -60,6 +78,73 @@ describe('Statu-Handler', function () {
         assume(headfindstub).is.called(1);
         assume(statcreatestub).is.not.called();
         assume(headcreatestub).is.not.called();
+        sinon.restore();
+      });
+
+      it('should error when any database call errors', async function () {
+        sinon.stub(status.models.StatusEvent, 'create').resolves();
+        sinon.stub(status.models.Status, 'findOne').rejects();
+        sinon.stub(status.models.StatusHead, 'findOne').resolves();
+
+        await assume(status.event(fixtures.singleEvent)).throwsAsync();
+        sinon.restore();
+      });
+    });
+
+    describe('queued', function () {
+      it('should update status and create event on queued message', async function () {
+        sinon.stub(status, 'event').resolves();
+        const statupdatestub = sinon.stub(status.models.Status, 'update').resolves();
+        const headupdatestub = sinon.stub(status.models.StatusHead, 'update').resolves();
+
+        await status.queued(fixtures.singleQueued);
+        assume(statupdatestub).is.called(1);
+        assume(headupdatestub).is.called(1);
+        sinon.restore();
+      });
+
+      it('should throw an error if status fails to update', async function () {
+        sinon.stub(status.models.Status, 'update').rejects();
+        sinon.stub(status.models.StatusHead, 'update').resolves();
+
+        await assume(status.queued(fixtures.singleQueued)).throwsAsync();
+        sinon.restore();
+      });
+    });
+
+    describe('error', function () {
+      it('should create event and update status with error', async function () {
+        const statusupdatestub = sinon.stub(status.models.Status, 'update').resolves();
+        const eventstub = sinon.stub(status, 'event').resolves();
+
+        await status.error(fixtures.singleError);
+        assume(statusupdatestub).is.called(1);
+        assume(eventstub).is.called();
+        sinon.restore();
+      });
+
+      it('should error when a database call errors', async function () {
+        sinon.stub(status.models.Status, 'update').resolves();
+        sinon.stub(status, 'event').rejects();
+
+        await assume(status.error(fixtures.singleError)).throwsAsync();
+        sinon.restore();
+      });
+    });
+
+    describe('complete', function () {
+      it('should increment counter, see if is complete, and update status when it sees it is', async function () {
+        const statusupdatestub = sinon.stub(status.models.Status, 'update').resolves();
+        const statuscounterfindstub = sinon.stub(status.models.StatusCounter, 'findOne').resolves(fixtures.singleCompleteCounter);
+        const statusfindstub = sinon.stub(status.models.Status, 'findOne').resolves(fixtures.singleCompleteStatus);
+        const statuscounterincstub = sinon.stub(status.models.StatusCounter, 'increment').resolves();
+
+        await status.complete(fixtures.singleComplete);
+        assume(statuscounterincstub).is.called(1);
+        assume(statuscounterfindstub).is.called(1);
+        assume(statusfindstub).is.called(1);
+        assume(statusupdatestub).is.called(1);
+        sinon.restore();
       });
     });
 

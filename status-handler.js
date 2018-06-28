@@ -91,14 +91,14 @@ class StatusHandler {
   async error(data) {
     const { Status } = this.models;
     data = this._transform(data, 'error');
-    await this.event(data);
-    // Since we have hit an error we set the error state to true on the main
-    // record, indicating at least one of the builds errored. This can be
-    // corrected by a future build
-    return Status.update({
-      ...this._transform(data, 'status'),
-      error: true
-    });
+
+    return Promise.all([
+      this.event(data),
+      // Since we have hit an error we set the error state to true on the main
+      // record, indicating at least one of the builds errored. This can be
+      // corrected by a future build
+      Status.update(this._transform(data, 'status'))
+    ]);
   }
 
   /**
@@ -120,8 +120,9 @@ class StatusHandler {
     await StatusCounter.increment(spec);
     const complete = await this.isComplete(spec);
     if (!complete) return;
-    const { pkg, env, version } = spec;
-    return Status.update({ pkg, env, version, complete, error: false });
+    // Overwrite error: true if it was set to error before, since the errored build
+    // must have resolved if we get here
+    return Status.update({ ...spec, complete, error: false });
   }
 
   /**
@@ -159,7 +160,8 @@ class StatusHandler {
    */
   async isComplete(spec) {
     const { StatusCounter, Status } = this.models;
-    const [{ total }, { count }] = await Promise.all([StatusCounter, Status].map(m => m.findOne(spec)));
+    const [{ count }, { total }] = await Promise.all([StatusCounter, Status].map(m => m.findOne(spec)));
+
     const progress = (count / total) * 100;
     return progress === 100;
   }
@@ -179,7 +181,8 @@ class StatusHandler {
 
     switch (type) {
       case 'status':
-        ret.total = total;
+        if (total) ret.total = total;
+        if (error) ret.error = error;
         break;
       case 'error':
         ret.error = true;
