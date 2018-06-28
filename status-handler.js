@@ -1,6 +1,8 @@
 const parallel = require('parallel-transform');
 const diagnostics = require('diagnostics');
 const thenify = require('thenify');
+const rip = require('rip-out');
+const uuid = require('uuid');
 
 const defaultLogger = {
   info: diagnostics('warehouse.ai-status-api:status-handler:info'),
@@ -39,15 +41,29 @@ class StatusHandler {
   }
 
   /**
-   * Handle event message to insert event into the database
+   * Handle event message to insert event into the database. We also create the
+   * first Status and StatusHead for the initial event which is the first
+   * message we will receive for a given build
    * TODO: In the future we could also dispatch out notifications etc
    *
    * @function event
    * @param {Object}
    * @returns {Promise} to resolve
    */
-  event (data) {
-    return this.models.StatusEvent.create(this._transform(data, 'event'));
+  async event (data) {
+    const { StatusEvent, StatusHead, Status } = this.models;
+    const [, head, current] = await Promise.all([
+      StatusEvent.create(this._transform(data, 'event')),
+      StatusHead.findOne(data),
+      Status.findOne(data)
+    ]);
+
+    if (!current) {
+      await this._status('create', {
+        ...this._transform(data, 'status'),
+        previousVersion: head.version
+      });
+    }
   }
   /**
    * Handle error message from carpenterd or carpenterd-worker
@@ -57,8 +73,13 @@ class StatusHandler {
    * @returns {Promise} to resolve
    */
   queued (data) {
-    // Remark: (jcrugzz) do we also want to create a status Event here?
-    return this._status('create', this._transform(data, 'status'));
+    // Its safe to update status here because status is created by the first
+    // `event` for npm install so that we can fetch the head and handle setting
+    // the previous version from the prior HEAD
+    return Promise.all([
+      this._status('update', this._transform(data, 'status')),
+      this.event(data)
+    ]);
   }
 
   /**
@@ -122,11 +143,11 @@ class StatusHandler {
    * @param {Object} data - Message from NSQ
    * @returns {Promise} to be resolved
    */
-  _status(data) {
+  _status(type, data) {
     const { Status, StatusHead } = this.models;
     return Promise.all([
-      Status.create(data),
-      StatusHead.create(this._headStrip(data))
+      Status[type](data),
+      StatusHead[type](rip(data, 'complete', 'error'))
     ]);
   }
 
@@ -151,9 +172,39 @@ class StatusHandler {
    * @returns {Object} normalized database record
    */
   _transform(data, type) {
+    const { pkg, name, version, env, message, details, total, error, locale } = data;
+    let ret = { version, env };
+    ret.pkg = pkg || name;
 
+    switch (type) {
+      case 'status':
+        ret.total = total;
+      case 'error':
+        ret.error = true;
+        ret.message = message;
+        ret.details = details;
+        ret.locale = locale;
+        break;
+      case 'counter':
+        break;
+      case 'event':
+        ret.message = message;
+        ret.details = details;
+        ret.error = error;
+        ret.locale = locale;
+        ret.eventId = uuid.v1();
+        break;
+    }
+    return ret;
   }
 
+  /**
+   * Method for creating a stream to handle all of the various types of
+   * messages we expect
+   *
+   * @function stream
+   * @returns {Stream} parallel stream for processing messages
+   */
   stream() {
     return parallel(this.conc, (data, cb) => {
       this.handle(data, (err) => {
