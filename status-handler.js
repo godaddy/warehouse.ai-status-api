@@ -88,7 +88,7 @@ class StatusHandler {
    * @param {Object} data - Message from NSQ
    * @returns {Promise} to resolve
    */
-  async error(data) {
+  error(data) {
     const { Status } = this.models;
     data = this._transform(data, 'error');
 
@@ -156,7 +156,7 @@ class StatusHandler {
    *
    * @function isComplete
    * @param {Object} spec - Specification to fetch Status/Counter
-   * @returns {Boolean} whether we are complete or not
+   * @returns {Promise} resolves to boolean whether we are complete or not
    */
   async isComplete(spec) {
     const { StatusCounter, Status } = this.models;
