@@ -1,0 +1,12 @@
+{
+  "config": {
+    "user": "cassandra",
+    "password": "cassandra",
+    "keyspace": "warehouseai_status_api",
+    "hosts": ["127.0.0.1"],
+    "keyspaceOptions": {
+      "class": "SimpleStrategy",
+      "replication_factor": 1
+    }
+  }
+}

@@ -2,8 +2,11 @@ const assume = require('assume');
 const models = require('warehouse.ai-status-models');
 const { mocks, helpers } = require('datastar-test-tools');
 const sinon = require('sinon');
+const thenify = require('tinythen');
+const Datastar = require('datastar');
 const StatusHandler = require('../status-handler');
 const fixtures = require('./fixtures');
+const cassConfig = require('./cassandra.json');
 
 assume.use(require('assume-sinon'));
 
@@ -12,9 +15,9 @@ describe('Status-Handler', function () {
     let status;
 
     before(() => {
-      const datastar = helpers.connectDatastar({ mock: true }, mocks.datastar());
+      const data = helpers.connectDatastar({ mock: true }, mocks.datastar());
       status = new StatusHandler({
-        models: models(datastar)
+        models: models(data)
       });
     });
 
@@ -164,7 +167,6 @@ describe('Status-Handler', function () {
     });
 
     describe('ignored', function () {
-
       it('logs when we get an ignored message', async function () {
         const info = sinon.stub(status.log, 'info');
 
@@ -173,6 +175,50 @@ describe('Status-Handler', function () {
         sinon.restore();
       });
     });
-
   });
+
+  describe.only('integration', function () {
+    let datastar;
+    let handler;
+
+    before(async function () {
+      datastar = new Datastar(cassConfig);
+
+      handler = new StatusHandler({
+        models: models(datastar)
+      });
+      await thenify(datastar, 'connect');
+      await handler.models.ensure();
+    });
+
+    after(async function () {
+      await handler.models.drop();
+      await thenify(datastar, 'close');
+    });
+
+    it('should successfully handle multiple event messages and put them in the database', async function () {
+      const { Status, StatusHead, StatusEvent } = handler.models;
+      const spec = handler._transform(fixtures.singleEvent, 'counter');
+      await handler.event(fixtures.singleEvent);
+      await handler.event(fixtures.secondEvent);
+
+      const status = await Status.findOne(spec);
+      const head = await StatusHead.findOne(spec);
+      const events = await StatusEvent.findAll(spec);
+      console.log('status', status.toJSON());
+      console.log('head', head.toJSON());
+      console.log('events', events.map(e => e.toJSON()));
+      assume(status.env).equals(spec.env);
+      assume(status.version).equals(spec.version);
+      assume(status.pkg).equals(spec.pkg);
+      assume(head.env).equals(spec.env);
+      assume(head.version).equals(spec.version);
+      assume(head.pkg).equals(spec.pkg);
+      assume(events).is.length(2);
+      const [first, second] = events;
+      assume(first.message).equals(fixtures.singleEvent.message);
+      assume(second.message).equals(fixtures.secondEvent.message);
+    });
+  });
+
 });

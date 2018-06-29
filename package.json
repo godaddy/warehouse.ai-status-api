@@ -33,6 +33,7 @@
     "slay": "^1.1.0",
     "slay-config": "^2.2.0",
     "slay-log": "^2.3.0",
+    "tinythen": "^1.0.1",
     "uuid": "^3.3.0",
     "warehouse.ai-api-client": "^3.0.1",
     "warehouse.ai-status-models": "^1.1.0"

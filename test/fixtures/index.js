@@ -7,6 +7,14 @@ exports.singleEvent = {
   message: 'Npm install has began',
 };
 
+exports.secondEvent = {
+  eventType: 'event',
+  name: 'whatever',
+  version: '1.0.0',
+  env: 'dev',
+  message: 'Npm install has completed',
+};
+
 exports.singleComplete = {
   eventType: 'complete',
   locale: 'en-US',
