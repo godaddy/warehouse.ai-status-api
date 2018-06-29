@@ -13,8 +13,8 @@ const defaults = {
  * @public
  */
 class Application extends App {
-  constructor (root, options) {
-    options = { ...defaults, ...options }
+  constructor(root, options) {
+    options = { ...defaults, ...options };
     super(root, options);
 
     this.env = process.env.NODE_ENV // eslint-disable-line no-process-env
@@ -36,7 +36,7 @@ class Application extends App {
  * @returns {undefined}
  */
 function onClose(app, options, next) {
-  if (!app.datastar) return void setImmediate(next)
+  if (!app.datastar) return void setImmediate(next);
 
   app.datastar.close(next);
 }
