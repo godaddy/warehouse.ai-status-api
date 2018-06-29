@@ -156,7 +156,21 @@ describe('Status-Handler', function () {
       });
 
       it('should error if a database call errors', async function () {
+        sinon.stub(status.models.StatusCounter, 'increment').rejects();
 
+        await assume(status.complete(fixtures.singleComplete)).throwsAsync();
+        sinon.restore();
+      });
+    });
+
+    describe('ignored', function () {
+
+      it('logs when we get an ignored message', async function () {
+        const info = sinon.stub(status.log, 'info');
+
+        await status.ignored(fixtures.singleEvent);
+        assume(info).is.called(1);
+        sinon.restore();
       });
     });
 
