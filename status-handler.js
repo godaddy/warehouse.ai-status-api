@@ -120,6 +120,7 @@ class StatusHandler {
     const spec = this._transform(data, 'counter');
     await StatusCounter.increment(spec);
     const complete = await this.isComplete(spec);
+
     if (!complete) return;
     // Overwrite error: true if it was set to error before, since the errored build
     // must have resolved if we get here

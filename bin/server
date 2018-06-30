@@ -4,5 +4,7 @@ require('..').start(function (err, app) {
   if (err) {
     return app.log.error('Error starting warehouse-status-api', err);
   }
-  app.log.info('Warehouse-status-api started on %s', app.config.get('http'));
+
+  const port = app.servers.http.address().port || app.config.get('http');
+  app.log.info('Warehouse-status-api started on %s', port);
 });
