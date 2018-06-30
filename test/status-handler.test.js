@@ -1,3 +1,4 @@
+const { Writable } = require('stream');
 const assume = require('assume');
 const models = require('warehouse.ai-status-models');
 const { mocks, helpers } = require('datastar-test-tools');
@@ -7,6 +8,7 @@ const Datastar = require('datastar');
 const StatusHandler = require('../status-handler');
 const fixtures = require('./fixtures');
 const cassConfig = require('./cassandra.json');
+const through = require('through2');
 
 assume.use(require('assume-sinon'));
 
@@ -177,7 +179,8 @@ describe('Status-Handler', function () {
     });
   });
 
-  describe.only('integration', function () {
+  describe('integration', function () {
+    this.timeout(6E4);
     let datastar;
     let handler;
 
@@ -185,7 +188,8 @@ describe('Status-Handler', function () {
       datastar = new Datastar(cassConfig);
 
       handler = new StatusHandler({
-        models: models(datastar)
+        models: models(datastar),
+        conc: 1
       });
       await thenify(datastar, 'connect');
       await handler.models.ensure();
@@ -205,9 +209,6 @@ describe('Status-Handler', function () {
       const status = await Status.findOne(spec);
       const head = await StatusHead.findOne(spec);
       const events = await StatusEvent.findAll(spec);
-      console.log('status', status.toJSON());
-      console.log('head', head.toJSON());
-      console.log('events', events.map(e => e.toJSON()));
       assume(status.env).equals(spec.env);
       assume(status.version).equals(spec.version);
       assume(status.pkg).equals(spec.pkg);
@@ -218,6 +219,94 @@ describe('Status-Handler', function () {
       const [first, second] = events;
       assume(first.message).equals(fixtures.singleEvent.message);
       assume(second.message).equals(fixtures.secondEvent.message);
+      await Promise.all([
+        Status.remove(spec),
+        StatusHead.remove(spec),
+        StatusEvent.remove(spec)
+      ]);
+    });
+
+    it('should handle initial event, queued and complete event for 1 build', async function () {
+      const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
+      const spec = handler._transform(fixtures.singleQueued, 'counter');
+      await handler.event(fixtures.singleEvent);
+      await handler.queued(fixtures.singleQueued);
+      await handler.complete(fixtures.singleComplete);
+
+      const status = await Status.findOne(spec);
+      assume(status.complete).equals(true);
+      assume(status.error).equals(false);
+      await Promise.all([
+        Status.remove(spec),
+        StatusHead.remove(spec),
+        StatusEvent.remove(spec),
+        StatusCounter.decrement(spec, 1)
+      ]);
+    });
+
+    it('should handle setting previous version when we have one as StatusHead', async function () {
+      const { StatusHead, Status, StatusEvent } = handler.models;
+      const spec = handler._transform(fixtures.singleEvent);
+
+      await StatusHead.create(fixtures.previousStatusHead);
+      await handler.event(fixtures.singleEvent);
+      const status = await Status.findOne(spec);
+      assume(status.previousVersion).equals(fixtures.previousStatusHead.version);
+      const events = await StatusEvent.findAll(spec);
+      assume(events).is.length(1);
+      await Promise.all([
+        Status.remove(spec),
+        StatusHead.remove(spec),
+        StatusEvent.remove(spec)
+      ]);
+    });
+
+    it('should handle error case', async function () {
+      const { StatusHead, Status, StatusEvent } = handler.models;
+      const spec = handler._transform(fixtures.singleEvent);
+
+      await handler.event(fixtures.singleEvent);
+      await handler.error(fixtures.singleError);
+
+      const status = await Status.findOne(spec);
+      assume(status.error).equals(true);
+      const events = await StatusEvent.findAll(spec);
+      assume(events).is.length(2);
+
+      await Promise.all([
+        Status.remove(spec),
+        StatusHead.remove(spec),
+        StatusEvent.remove(spec)
+      ]);
+    });
+
+    it('should handle a series of events via stream', function (done) {
+      const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
+      const spec = handler._transform(fixtures.singleEvent);
+      const source = through.obj();
+
+      source
+        .pipe(handler.stream())
+        .pipe(new Writable({
+          objectMode: true,
+          write: (_, __, cb) => cb()
+        }))
+        .on('finish', async () => {
+          const status = await Status.findOne(spec);
+          assume(status.complete).equals(true);
+          await Promise.all([
+            Status.remove(spec),
+            StatusHead.remove(spec),
+            StatusEvent.remove(spec),
+            StatusCounter.decrement(spec, 1)
+          ]);
+          done();
+        });
+
+      source.write(fixtures.singleEvent);
+      source.write(fixtures.singleQueued);
+      source.write(fixtures.singleComplete);
+      source.end();
     });
   });
 
