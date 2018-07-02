@@ -7,7 +7,7 @@
     "warehouse-status": "bin/server"
   },
   "scripts": {
-    "test": "nyc mocha --reporter=lcov --reporter=text test/*.test.js",
+    "test": "nyc --reporter=lcov --reporter=text mocha test/*.test.js",
     "lint": "eslint-godaddy *.js preboots/*.js routes/*.js test/*.js",
     "pretest": "npm run lint"
   },
