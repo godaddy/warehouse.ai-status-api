@@ -1,4 +1,5 @@
 # warehouse.ai-status-api
+[![Build Status](https://travis-ci.org/godaddy/warehouse.ai-status-api.svg?branch=master)](https://travis-ci.org/godaddy/warehouse.ai-status-api)
 
 ## Motivation
 
