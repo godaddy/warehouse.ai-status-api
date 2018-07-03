@@ -10,10 +10,16 @@ const asynHandler = require('express-async-handler');
 module.exports = function routes(app, options, next) {
   app.perform('actions', function (done) {
 
+    /**
+     * Returns a route handler for the given type.
+     * 
+     * @param {string} type - Event type to get (`Status` or `StatusEvent`)
+     * @returns {function} The async route handler
+     */
     const statusRouteHandler = function statusRouteHandler(type) {
-      const find = type === 'StatusEvent' ? 'findAll' : 'findOne';
+      const find = (type === 'StatusEvent') ? 'findAll' : 'findOne';
 
-      return async function (req, res) {
+      return async function handler(req, res) {
         const { pkg, env, version } = req.params;
 
         if(pkg && env && version) {
