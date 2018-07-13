@@ -40,8 +40,8 @@ module.exports = function routes(app, options, next) {
       };
     };
 
-    app.routes.get('/status/:pkg/:env/:version', asynHandler(statusRouteHandler('Status')));
-    app.routes.get('/status-events/:pkg/:env/:version', asynHandler(statusRouteHandler('StatusEvent')));
+    app.routes.get('/status/:pkg/:env/:version?', asynHandler(statusRouteHandler('Status')));
+    app.routes.get('/status-events/:pkg/:env/:version?', asynHandler(statusRouteHandler('StatusEvent')));
 
     done();
   });

@@ -148,6 +148,7 @@ describe('Status-Handler', function () {
     describe('complete', function () {
       it('should increment counter, see if is complete, and update status when it sees it is', async function () {
         const statusupdatestub = sinon.stub(status.models.Status, 'update').resolves();
+        const statuseventcreatestub = sinon.stub(status.models.StatusEvent, 'create').resolves();
         const statuscounterfindstub = sinon.stub(status.models.StatusCounter, 'findOne').resolves(fixtures.singleCompleteCounter);
         const statusfindstub = sinon.stub(status.models.Status, 'findOne').resolves(fixtures.singleCompleteStatus);
         const statuscounterincstub = sinon.stub(status.models.StatusCounter, 'increment').resolves();
@@ -157,6 +158,7 @@ describe('Status-Handler', function () {
         assume(statuscounterfindstub).is.called(1);
         assume(statusfindstub).is.called(1);
         assume(statusupdatestub).is.called(1);
+        assume(statuseventcreatestub).is.called(1);
         sinon.restore();
       });
 

@@ -1,11 +1,13 @@
 const index = require('..');
 const assume = require('assume');
+const request = require('request-promise-native');
+const { address } = require('./util');
 
 describe('index', function () {
   let app;
 
   before(function (done) {
-    index.start((err, instance) => {
+    index.start({ auth: false }, (err, instance) => {
       app = instance;
       done(err);
     });
@@ -21,5 +23,7 @@ describe('index', function () {
     assume(port).is.a('number');
   });
 
-  it('it should respond with 404 on root');
+  it('it should respond with 404 on root', async function () {
+    await assume(request(address(app, '/'))).throwsAsync();
+  });
 });

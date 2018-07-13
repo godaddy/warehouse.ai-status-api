@@ -104,7 +104,7 @@ class StatusHandler {
 
   /**
    * Handle complete messages from each carpenterd-worker
-   *  1. Increment counter
+   *  1. Increment counter and create status event
    *  2. Compute progress
    *  3. Update if deemed "complete"
    *
@@ -113,12 +113,16 @@ class StatusHandler {
    * @returns {Promise} to resolve
    */
   async complete(data) {
-    const { Status, StatusCounter } = this.models;
+    const { Status, StatusEvent, StatusCounter } = this.models;
     //
     // If a build initially failed to completee
     //
     const spec = this._transform(data, 'counter');
-    await StatusCounter.increment(spec);
+    const event = this._transform(data, 'event');
+    await Promise.all([
+      StatusCounter.increment(spec),
+      StatusEvent.create(event)
+    ]);
     const complete = await this.isComplete(spec);
 
     if (!complete) return;
