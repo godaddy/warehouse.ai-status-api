@@ -57,9 +57,9 @@ module.exports = function routes(app, options, next) {
       if (!version) head = await app.models.StatusHead.findOne({ pkg, env });
 
       version = version || head.version;
-      const progress = await app.progress.compute({ pkg, env, version });
+      const result = await app.progress.compute({ pkg, env, version });
 
-      res.status(200).json({ progress });
+      res.status(200).json(result);
     }));
 
     done();
