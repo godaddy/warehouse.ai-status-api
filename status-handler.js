@@ -2,6 +2,7 @@ const parallel = require('parallel-transform');
 const diagnostics = require('diagnostics');
 const rip = require('rip-out');
 const uuid = require('uuid');
+const Progress = require('./progress');
 
 const defaultLogger = {
   info: diagnostics('warehouse.ai-status-api:status-handler:info'),
@@ -23,6 +24,7 @@ class StatusHandler {
    */
   constructor(opts) {
     this.models = opts.models;
+    this.progress = opts.progress || new Progress(this.models);
     this.conc = opts.conc || 10;
     this.log = opts.log || defaultLogger;
   }
@@ -165,10 +167,7 @@ class StatusHandler {
    * @returns {Promise} resolves to boolean whether we are complete or not
    */
   async isComplete(spec) {
-    const { StatusCounter, Status } = this.models;
-    const [{ count }, { total }] = await Promise.all([StatusCounter, Status].map(m => m.findOne(spec)));
-
-    const progress = (count / total) * 100;
+    const progress = await this.progress.compute(spec);
     return progress === 100;
   }
 

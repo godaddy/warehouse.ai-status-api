@@ -5,6 +5,7 @@ const request = require('request-promise-native');
 const StatusHandler = require('../status-handler');
 const fixtures = require('./fixtures');
 const { address } = require('./util');
+const rip = require('rip-out');
 
 
 describe('routes', function () {
@@ -54,10 +55,24 @@ describe('routes', function () {
       assume(statusObj.complete).equals(true);
     });
 
+    it('/status should error with 404 without enough parameters', async function () {
+      const response = await request({ ...address(app, '/status'), simple: false, resolveWithFullResponse: true });
+      assume(response.statusCode).equals(404);
+    });
+
     it('/status-events should return events when requested', async function () {
       const statusEvents = await request(address(app, '/status-events', spec));
       assume(statusEvents).is.length(3);
     });
 
+    it('/progress should return progress computed for spec requested without version', async function () {
+      const { progress } = await request(address(app, '/progress', rip(spec, 'version')));
+      assume(progress).is.equal(100);
+    });
+
+    it('/progress should return progress computed for spec requested with version', async function () {
+      const { progress } = await request(address(app, '/progress', spec));
+      assume(progress).is.equal(100);
+    });
   });
 });

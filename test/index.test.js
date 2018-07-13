@@ -4,6 +4,7 @@ const request = require('request-promise-native');
 const { address } = require('./util');
 
 describe('index', function () {
+  this.timeout(6E4);
   let app;
 
   before(function (done) {

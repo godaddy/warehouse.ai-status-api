@@ -17,7 +17,7 @@ module.exports = function routes(app, options, next) {
      * @param {string} type - Event type to get (`Status` or `StatusEvent`)
      * @returns {function} The async route handler
      */
-    const statusRouteHandler = function statusRouteHandler(type) {
+    function statusRouteHandler(type) {
       const find = (type === 'StatusEvent') ? 'findAll' : 'findOne';
 
       return async function handler(req, res) {
@@ -38,10 +38,29 @@ module.exports = function routes(app, options, next) {
 
         res.status(400).json(new Error(`Bad path. ${!pkg && 'Missing package.'} ${!env && 'Missing environment.'}`));
       };
-    };
+    }
 
     app.routes.get('/status/:pkg/:env/:version?', asynHandler(statusRouteHandler('Status')));
     app.routes.get('/status-events/:pkg/:env/:version?', asynHandler(statusRouteHandler('StatusEvent')));
+
+    /**
+     * Route Handler for computing progress for the given pkg/env/version
+     *
+     * @param {Request} req - Request object
+     * @param {Response} res - Response object
+     *
+     */
+    app.routes.get('/progress/:pkg/:env/:version?', asynHandler(async function progressHandler(req, res) {
+      let { pkg, env, version } = req.params;
+      let head;
+
+      if (!version) head = await app.models.StatusHead.findOne({ pkg, env });
+
+      version = version || head.version;
+      const progress = await app.progress.compute({ pkg, env, version });
+
+      res.status(200).json({ progress });
+    }));
 
     done();
   });
