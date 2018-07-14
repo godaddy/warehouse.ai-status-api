@@ -167,8 +167,8 @@ class StatusHandler {
    * @returns {Promise} resolves to boolean whether we are complete or not
    */
   async isComplete(spec) {
-    const progress = await this.progress.compute(spec);
-    return progress === 100;
+    const { progress } = await this.progress.compute(spec);
+    return progress >= 100;
   }
 
   /**
