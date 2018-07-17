@@ -1,3 +1,4 @@
+require('make-promises-safe');
 const path = require('path');
 const { App } = require('slay');
 

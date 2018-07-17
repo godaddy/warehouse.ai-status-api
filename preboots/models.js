@@ -16,9 +16,10 @@ module.exports = function modelboot(app, options, callback) {
   app.models = statusModels(app.datastar);
 
   if (!ensure) return void app.datastar.connect(callback);
-  app.datastar.connect(err => {
+  app.datastar.connect(async err => {
     if (err) return void callback(err);
-    app.models.ensure(callback);
+    await app.models.ensure();
+    callback();
   });
 };
 

@@ -23,6 +23,7 @@ module.exports = function preboots(app, options, callback) {
   app.preboot(require('./environments'));
   app.preboot(require('./wrhs'));
   app.preboot(require('./models'));
+  app.preboot(require('./progress'));
   app.preboot(require('./nsq'));
 
   callback();

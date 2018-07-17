@@ -2,6 +2,7 @@ const parallel = require('parallel-transform');
 const diagnostics = require('diagnostics');
 const rip = require('rip-out');
 const uuid = require('uuid');
+const Progress = require('./progress');
 
 const defaultLogger = {
   info: diagnostics('warehouse.ai-status-api:status-handler:info'),
@@ -23,6 +24,7 @@ class StatusHandler {
    */
   constructor(opts) {
     this.models = opts.models;
+    this.progress = opts.progress || new Progress(this.models);
     this.conc = opts.conc || 10;
     this.log = opts.log || defaultLogger;
   }
@@ -104,7 +106,7 @@ class StatusHandler {
 
   /**
    * Handle complete messages from each carpenterd-worker
-   *  1. Increment counter
+   *  1. Increment counter and create status event
    *  2. Compute progress
    *  3. Update if deemed "complete"
    *
@@ -113,12 +115,16 @@ class StatusHandler {
    * @returns {Promise} to resolve
    */
   async complete(data) {
-    const { Status, StatusCounter } = this.models;
+    const { Status, StatusEvent, StatusCounter } = this.models;
     //
     // If a build initially failed to completee
     //
     const spec = this._transform(data, 'counter');
-    await StatusCounter.increment(spec);
+    const event = this._transform(data, 'event');
+    await Promise.all([
+      StatusCounter.increment(spec),
+      StatusEvent.create(event)
+    ]);
     const complete = await this.isComplete(spec);
 
     if (!complete) return;
@@ -161,11 +167,8 @@ class StatusHandler {
    * @returns {Promise} resolves to boolean whether we are complete or not
    */
   async isComplete(spec) {
-    const { StatusCounter, Status } = this.models;
-    const [{ count }, { total }] = await Promise.all([StatusCounter, Status].map(m => m.findOne(spec)));
-
-    const progress = (count / total) * 100;
-    return progress === 100;
+    const { progress } = await this.progress.compute(spec);
+    return progress >= 100;
   }
 
   /**
