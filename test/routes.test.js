@@ -54,6 +54,24 @@ describe('routes', function () {
         await status.event(fixtures.singleEvent);
       });
 
+      it('/status should 404 when status requested and StatusHead doesnt exist', async function () {
+        try {
+          await request(address(app, '/status', { pkg: 'noway', env: 'dev' }));
+        } catch (err) {
+          assume(err.statusCode).equals(404);
+          assume(err.message).includes('No Status exists for noway in dev');
+        }
+      });
+
+      it('/status should 404 when status requested and specified spec doesnt exist', async function () {
+        try {
+          await request(address(app, '/status', { pkg: 'noway', env: 'dev', version: '7.6.1' }));
+        } catch (err) {
+          assume(err.statusCode).equals(404);
+          assume(err.message).includes('No Status exists for noway@7.6.1 in dev');
+        }
+      });
+
       it('/status should return status object when requested', async function () {
         const statusObj = await request(address(app, '/status', spec));
         assume(statusObj.complete).is.falsey();
