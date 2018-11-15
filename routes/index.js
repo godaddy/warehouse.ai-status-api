@@ -25,14 +25,14 @@ module.exports = function routes(app, options, next) {
 
         if (pkg && env && version) {
           const status = await app.models[type][find]({ pkg, env, version });
-
+          if (!status) return res.status(404).json(`No ${type} exists for ${pkg}@${version} in ${env}`);
           return res.json(status);
         }
 
         if (pkg && env) {
           const head = await app.models.StatusHead.findOne({ pkg, env });
+          if (!head) return res.status(404).json(new Error(`No Status exists for ${pkg} in ${env}`));
           const status = await app.models[type][find]({ pkg, env, version: head.version });
-
           return res.json(status);
         }
 
