@@ -25,6 +25,7 @@ module.exports = function preboots(app, options, callback) {
   app.preboot(require('./models'));
   app.preboot(require('./progress'));
   app.preboot(require('./nsq'));
+  app.preboot(require('./swagger'));
 
   callback();
 };

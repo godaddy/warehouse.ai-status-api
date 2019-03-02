@@ -10,8 +10,10 @@ const healthcheck = /healthcheck/;
  * @param {Function} callback Continuation function
  * @public
  */
-module.exports = function middlewares(app, options, callback) {
-  const auth = app.authboot && app.authboot.middleware || function (req, res, next) { next(); };
+module.exports = function (app, options, callback) {
+  app.middlewares = {
+    auth: (app.authboot && app.authboot.middleware) || function (req, res, next) { next(); }
+  };
 
   app.use(function hcheck(req, res, next) {
     if (healthcheck.test(req.url)) {
@@ -19,8 +21,6 @@ module.exports = function middlewares(app, options, callback) {
     }
     next();
   });
-  app.use(auth);
   app.use(bodyParser.json());
-
   callback();
 };
