@@ -117,7 +117,6 @@ describe('routes', function () {
 
       it('/status should return status object when requested', async function () {
         const statusObj = await request(address(app, '/status', spec));
-        console.log(statusObj);
         assume(statusObj.complete).is.falsey();
         assume(statusObj.createDate).exists();
         assume(statusObj.updateDate).exists();

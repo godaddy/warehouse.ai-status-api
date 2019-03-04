@@ -1,7 +1,5 @@
 const bodyParser = require('body-parser');
 
-const healthcheck = /healthcheck/;
-
 /**
  * Middleware initializer
  *
@@ -15,12 +13,6 @@ module.exports = function (app, options, callback) {
     auth: (app.authboot && app.authboot.middleware) || function (req, res, next) { next(); }
   };
 
-  app.use(function hcheck(req, res, next) {
-    if (healthcheck.test(req.url)) {
-      return res.end('ok');
-    }
-    next();
-  });
   app.use(bodyParser.json());
   callback();
 };

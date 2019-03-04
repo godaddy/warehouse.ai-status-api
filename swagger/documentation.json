@@ -6,6 +6,27 @@
     "description": "wrhs status api"
   },
   "paths": {
+    "/healthcheck": {
+      "get": {
+        "summary": "Healthcheck endpoint to verify that service is running and able to accept new connections",
+        "security": [],
+        "produces": [
+          "text/plain"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/status/{pkg}/{env}": {
       "get": {
         "summary": "Gets the progress for a given package, environment",
