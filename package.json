@@ -7,11 +7,11 @@
     "warehouse-status": "bin/server"
   },
   "scripts": {
-    "pretest": "npm run swagger:doc",
+    "pretest": "npm run swagger",
     "test": "nyc --reporter=lcov --reporter=text mocha test/*.test.js",
     "lint": "eslint-godaddy *.js preboots/*.js routes/*.js test/*.js",
-    "prepublishOnly": "npm run swagger:doc",
-    "swagger:doc": "swagger-jsdoc -d swagger/definition.js -o swagger/documentation.json",
+    "prepublishOnly": "npm run swagger",
+    "swagger": "swagger-jsdoc -d swagger/definition.js -o swagger/documentation.json",
     "posttest": "npm run lint"
   },
   "keywords": [
