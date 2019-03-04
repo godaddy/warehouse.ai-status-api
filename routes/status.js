@@ -39,7 +39,6 @@ module.exports = function (app) {
       res.status(400).json(new Error(`Bad path. ${!pkg && 'Missing package.'} ${!env && 'Missing environment.'}`));
     };
   }
-
   /**
   * @swagger
   * /status/{pkg}/{env}:
