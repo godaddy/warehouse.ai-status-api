@@ -7,9 +7,12 @@
     "warehouse-status": "bin/server"
   },
   "scripts": {
+    "pretest": "npm run swagger",
     "test": "nyc --reporter=lcov --reporter=text mocha test/*.test.js",
     "lint": "eslint-godaddy *.js preboots/*.js routes/*.js test/*.js",
-    "pretest": "npm run lint"
+    "prepublishOnly": "npm run swagger",
+    "swagger": "swagger-jsdoc -d swagger/definition.js -o swagger/documentation.json",
+    "posttest": "npm run lint"
   },
   "keywords": [
     "warehouse.ai",
@@ -36,6 +39,8 @@
     "slay": "^1.1.0",
     "slay-config": "^2.2.0",
     "slay-log": "^2.3.0",
+    "swagger-jsdoc": "^3.2.7",
+    "swagger-ui-express": "^4.0.2",
     "tinythen": "^1.0.1",
     "uuid": "^3.3.0",
     "warehouse.ai-api-client": "^3.0.1",

@@ -1,0 +1,469 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "warehouse.ai-status-api",
+    "version": "1.0.1",
+    "description": "wrhs status api"
+  },
+  "paths": {
+    "/healthcheck": {
+      "get": {
+        "summary": "Healthcheck endpoint to verify that service is running and able to accept new connections",
+        "security": [],
+        "produces": [
+          "text/plain"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/{pkg}/{env}": {
+      "get": {
+        "summary": "Gets the progress for a given package, environment",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pkg",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PackageName"
+            },
+            "description": "The package name"
+          },
+          {
+            "in": "path",
+            "name": "env",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Environment"
+            },
+            "description": "The environment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad path. Missing package or missing environment"
+          },
+          "404": {
+            "description": "No StatusEvent exists for package in environment"
+          }
+        }
+      }
+    },
+    "/status/{pkg}/{env}/{version}": {
+      "get": {
+        "summary": "Gets the progress for a given package, environment and version",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pkg",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PackageName"
+            },
+            "description": "The package name"
+          },
+          {
+            "in": "path",
+            "name": "env",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Environment"
+            },
+            "description": "The environment"
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/VersionNumber"
+            },
+            "description": "The package version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad path. Missing package or missing environment"
+          },
+          "404": {
+            "description": "No StatusEvent exists for package in environment"
+          }
+        }
+      }
+    },
+    "/status-events/{pkg}/{env}": {
+      "get": {
+        "summary": "Gets the progress for a given package, environment",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pkg",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PackageName"
+            },
+            "description": "The package name"
+          },
+          {
+            "in": "path",
+            "name": "env",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Environment"
+            },
+            "description": "The environment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/StatusEvent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad path. Missing package or missing environment"
+          },
+          "404": {
+            "description": "No StatusEvent exists for package in environment"
+          }
+        }
+      }
+    },
+    "/status-events/{pkg}/{env}/{version}": {
+      "get": {
+        "summary": "Gets the progress for a given package, environment and version",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pkg",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PackageName"
+            },
+            "description": "The package name"
+          },
+          {
+            "in": "path",
+            "name": "env",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Environment"
+            },
+            "description": "The environment"
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/VersionNumber"
+            },
+            "description": "The package version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/StatusEvent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad path. Missing package or missing environment"
+          },
+          "404": {
+            "description": "No StatusEvent exists for package in environment"
+          }
+        }
+      }
+    },
+    "/progess/{pkg}/{env}": {
+      "get": {
+        "summary": "Gets the progress for a given package, environment",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pkg",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PackageName"
+            },
+            "description": "The package name"
+          },
+          {
+            "in": "path",
+            "name": "env",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Environment"
+            },
+            "description": "The environment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/Progress"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/progess/{pkg}/{env}/{version}": {
+      "get": {
+        "summary": "Gets the progress for a given package, environment and version",
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pkg",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PackageName"
+            },
+            "description": "The package name"
+          },
+          {
+            "in": "path",
+            "name": "env",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Environment"
+            },
+            "description": "The environment"
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/VersionNumber"
+            },
+            "description": "The package version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/Progress"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "security": {
+      "0": {
+        "basicAuth": []
+      }
+    }
+  },
+  "definitions": {
+    "Environment": {
+      "type": "string",
+      "minimum": 1,
+      "enum": [
+        "dev",
+        "test",
+        "prod"
+      ]
+    },
+    "PackageName": {
+      "type": "string",
+      "minimum": 1
+    },
+    "VersionNumber": {
+      "type": "string",
+      "minimum": 1
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "pkg": {
+          "type": "string"
+        },
+        "env": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "previousVersion": {
+          "type": "string"
+        },
+        "total": {
+          "type": "number"
+        },
+        "error": {
+          "type": "string"
+        },
+        "createDate": {
+          "type": "string"
+        },
+        "updateDate": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        }
+      }
+    },
+    "StatusEvent": {
+      "type": "object",
+      "properties": {
+        "pkg": {
+          "type": "string"
+        },
+        "env": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "locale": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        },
+        "createDate": {
+          "type": "string"
+        },
+        "eventId": {
+          "type": "string"
+        }
+      }
+    },
+    "Progress": {
+      "type": "object",
+      "properties": {
+        "progress": {
+          "type": "number"
+        },
+        "count": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic"
+      }
+    }
+  },
+  "tags": []
+}
