@@ -40,4 +40,4 @@ npm-error.log
 .node_repl_history
 
 # docs
-swagger/documentation.json
+!swagger/documentation.json
