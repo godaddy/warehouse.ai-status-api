@@ -38,3 +38,6 @@ npm-error.log
 
 # Optional REPL history
 .node_repl_history
+
+# docs
+swagger/documentation.json
