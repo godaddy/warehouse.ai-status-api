@@ -186,7 +186,7 @@ module.exports = function (app) {
 
   /**
   * @swagger
-  * /progess/{pkg}/{env}:
+  * /progress/{pkg}/{env}:
   *   get:
   *     summary: Gets the progress for a given package, environment
   *     security:
@@ -215,7 +215,7 @@ module.exports = function (app) {
   *               $ref: '#/definitions/Progress'
   *       404:
   *         description: Not found
-  * /progess/{pkg}/{env}/{version}:
+  * /progress/{pkg}/{env}/{version}:
   *   get:
   *     summary: Gets the progress for a given package, environment and version
   *     security:
