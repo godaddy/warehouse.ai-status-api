@@ -1,5 +1,7 @@
 # CHANGELOG
 
+### 1.1.2
+- Update swagger docs to dereference for better AWS Support
 - [#11] Update `README.md` content
   - Update patch/minor version of dependencies.
 - [#10] Default documenation
