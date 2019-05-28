@@ -12,7 +12,7 @@ delete options.swaggerDefinition.apis;
 const rawSpec = swaggerDoc(options);
 jsonRefs.resolveRefs(rawSpec)
   .then(spec => {
-    fs.writeFileSync(path.join(__dirname, '..', 'swagger', 'wrhs-status-api-spec.json'), JSON.stringify(spec.resolved, null, 2));
+    fs.writeFileSync(path.join(__dirname, '..', 'swagger', 'documentation.json'), JSON.stringify(spec.resolved, null, 2));
   });
 
 
