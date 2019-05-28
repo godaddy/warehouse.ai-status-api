@@ -9,6 +9,6 @@ describe('Swagger docs', function () {
     assume(docs.openapi).equal('3.0.2');
     assume(docs.paths).not.is.falsey();
     assume(docs.definitions.StatusEvent).not.is.falsey();
-    assume(docs.paths['/progess/{pkg}/{env}/{version}'].get.responses['200'].description).to.equal('OK');
+    assume(docs.paths['/progress/{pkg}/{env}/{version}'].get.responses['200'].description).to.equal('OK');
   });
 });
