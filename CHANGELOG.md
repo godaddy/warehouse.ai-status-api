@@ -1,5 +1,7 @@
 # CHANGELOG
 
+### 1.1.3
+
 - Fix spelling error in swagger docs
 
 ### 1.1.2
