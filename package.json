@@ -12,7 +12,9 @@
     "lint": "eslint-godaddy *.js preboots/*.js routes/*.js test/*.js",
     "prepublishOnly": "npm run swagger",
     "swagger": "swagger-jsdoc -d swagger/definition.js -o swagger/documentation.json",
-    "posttest": "npm run lint"
+    "posttest": "npm run lint",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "keywords": [
     "warehouse.ai",
@@ -44,7 +46,8 @@
     "tinythen": "^1.0.1",
     "uuid": "^3.3.0",
     "warehouse.ai-api-client": "^3.0.1",
-    "warehouse.ai-status-models": "^1.2.0"
+    "warehouse.ai-status-models": "^1.2.0",
+    "snyk": "^1.189.0"
   },
   "devDependencies": {
     "assume": "^2.2.0",
@@ -60,5 +63,6 @@
     "request": "^2.87.0",
     "request-promise-native": "^1.0.5",
     "sinon": "^6.0.1"
-  }
+  },
+  "snyk": true
 }
