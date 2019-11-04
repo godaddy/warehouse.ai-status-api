@@ -10,7 +10,7 @@ const Warehouse = require('warehouse.ai-api-client');
 module.exports = function (app, options, next) {
   app.wrhs = new Warehouse(app.config.get('wrhs'));
 
-  const webhooks = app.config.get('webhooks');
+  const webhooks = app.config.get('webhooks') || {};
   const endpoints = Object.keys(webhooks);
 
   app.webhooks = {};
