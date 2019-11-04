@@ -16,11 +16,12 @@ module.exports = function (app, options, next) {
   app.webhooks = {};
 
   endpoints.forEach(url => {
+    console.log(url);
     webhooks[url].forEach(pkg => {
       if (!app.webhooks[pkg]) {
         app.webhooks[pkg] = [];
       }
-      app.webhooks[pkg].push(url);
+      app.webhooks[pkg].push(url.replace(/\+/g, ':'));
     });
   });
 
