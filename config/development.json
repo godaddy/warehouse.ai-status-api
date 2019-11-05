@@ -20,11 +20,11 @@
     }
   },
   "webhooks": {
-    "https+//example.com/webhooks": [
+    "https://example.com/webhooks": [
       "package1",
       "package2"
     ],
-    "https+//carpediem.com/webhooks": [
+    "https://carpediem.com/webhooks": [
       "package2",
       "package3",
       "package4"
