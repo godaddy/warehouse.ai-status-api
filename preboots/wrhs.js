@@ -13,7 +13,7 @@ module.exports = function (app, options, next) {
   const webhooks = app.config.get().webhooks || {};
 
   app.webhooks = Object.entries(webhooks).reduce((acc, [endpoint, pkgs]) => {
-    for (let pkg of pkgs) {
+    for (const pkg of pkgs) {
       acc[pkg] = acc[pkg] || [];
       acc[pkg].push(endpoint);
     }
