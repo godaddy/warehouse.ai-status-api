@@ -5,6 +5,7 @@ exports.singleEvent = {
   version: '1.0.0',
   env: 'dev',
   message: 'Npm install has began',
+  details: 'The developers of CoreOS are looking for a good job'
 };
 
 exports.secondEvent = {
@@ -19,6 +20,7 @@ exports.singleComplete = {
   eventType: 'complete',
   locale: 'en-US',
   message: 'What happened? Oh yea we are complete now',
+  details: 'not much else to report tbh',
   version: '1.0.0',
   env: 'dev',
   name: 'whatever'
@@ -53,6 +55,7 @@ exports.singleQueued = {
   version: '1.0.0',
   env: 'dev',
   message: 'builds were queued',
+  details: 'the queue is very long',
   total: 1
 };
 
@@ -61,5 +64,3 @@ exports.previousStatusHead = {
   env: 'dev',
   pkg: 'whatever'
 };
-
-

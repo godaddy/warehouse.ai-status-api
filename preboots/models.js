@@ -1,4 +1,6 @@
-const Datastar = require('datastar');
+const AWS = require('aws-sdk');
+const AwsLiveness = require('aws-liveness');
+const dynamodb = require('dynamodb-x');
 const statusModels = require('warehouse.ai-status-models');
 
 /**
@@ -12,14 +14,15 @@ const statusModels = require('warehouse.ai-status-models');
 module.exports = function modelboot(app, options, callback) {
   const ensure = app.config.get('ensure') || options.ensure;
 
-  app.datastar = new Datastar(app.config.get('datastar'));
-  app.models = statusModels(app.datastar);
-
-  if (!ensure) return void app.datastar.connect(callback);
-  app.datastar.connect(async err => {
-    if (err) return void callback(err);
-    await app.models.ensure();
+  const dynamoDriver = new AWS.DynamoDB(app.config.get('dynamodb'));
+  dynamodb.dynamoDriver(dynamoDriver);
+  app.models = statusModels(dynamodb);
+  const liveness = new AwsLiveness();
+  liveness.waitForServices({
+    clients: [dynamoDriver],
+    waitSeconds: 60
+  }).then(async () => {
+    if (ensure) await app.models.ensure();
     callback();
-  });
+  }).catch(err => void callback(err));
 };
-

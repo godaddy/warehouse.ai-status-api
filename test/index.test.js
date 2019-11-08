@@ -1,7 +1,13 @@
-const index = require('..');
 const assume = require('assume');
 const request = require('request-promise-native');
+const thenify = require('tinythen');
+
+const index = require('..');
 const { address } = require('./util');
+
+// Need to set some values for these so localstack works in Travis
+process.env.AWS_ACCESS_KEY_ID = 'foobar';
+process.env.AWS_SECRET_ACCESS_KEY = 'foobar';
 
 describe('index', function () {
   this.timeout(6E4);
@@ -14,9 +20,10 @@ describe('index', function () {
     });
   });
 
-  after(function (done) {
-    if (app) return app.close(done);
-    done();
+  after(async function () {
+    if (!app) return;
+    await app.models.drop();
+    await thenify(app, 'close');
   });
 
   it('should correctly listen on a port', function () {

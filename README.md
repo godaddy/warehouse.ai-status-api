@@ -66,7 +66,13 @@ GET    /progress/:pkg/:env/:version            # Get build progress for HEAD
 
 ## Test
 
-Make sure you are running [cassandra] locally.
+Before running tests, spin up an instance of localstack by running
+
+```sh
+npm run localstack
+```
+
+Then run:
 
 ```sh
 npm test
@@ -75,7 +81,6 @@ npm test
 [nsq]: https://nsq.io/
 [carpenterd]: https://github.com/godaddy/carpenterd
 [carpenterd-worker]: https://github.com/godaddy/carpenterd-worker
-[cassandra]: https://cassandra.apache.org/
 [Slay]: https://github.com/godaddy/slay
 [authboot]: https://github.com/warehouseai/authboot
 [whisper]: https://github.com/jcrugzz/whisper.json

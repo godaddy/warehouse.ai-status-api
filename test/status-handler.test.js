@@ -1,25 +1,31 @@
+const AWS = require('aws-sdk');
+const AwsLiveness = require('aws-liveness');
 const { Writable } = require('stream');
 const assume = require('assume');
+const dynamodb = require('dynamodb-x');
 const models = require('warehouse.ai-status-models');
-const { mocks, helpers } = require('datastar-test-tools');
 const sinon = require('sinon');
-const thenify = require('tinythen');
-const Datastar = require('datastar');
-const StatusHandler = require('../status-handler');
-const fixtures = require('./fixtures');
-const cassConfig = require('./cassandra.json');
 const through = require('through2');
 
+const StatusHandler = require('../status-handler');
+const fixtures = require('./fixtures');
+const config = require('../config/development.json');
+
 assume.use(require('assume-sinon'));
+
+// Need to set some values for these so localstack works in Travis
+process.env.AWS_ACCESS_KEY_ID = 'foobar';
+process.env.AWS_SECRET_ACCESS_KEY = 'foobar';
+
+const liveness = new AwsLiveness();
 
 describe('Status-Handler', function () {
   describe('unit', function () {
     let status;
 
     before(() => {
-      const data = helpers.connectDatastar({ mock: true }, mocks.datastar());
       status = new StatusHandler({
-        models: models(data)
+        models: models(dynamodb)
       });
     });
 
@@ -183,28 +189,30 @@ describe('Status-Handler', function () {
 
   describe('integration', function () {
     this.timeout(6E4);
-    let datastar;
     let handler;
 
     before(async function () {
-      datastar = new Datastar(cassConfig);
-
+      const dynamoDriver = new AWS.DynamoDB(config.dynamodb);
+      dynamodb.dynamoDriver(dynamoDriver);
       handler = new StatusHandler({
-        models: models(datastar),
+        models: models(dynamodb),
         conc: 1
       });
-      await thenify(datastar, 'connect');
+      await liveness.waitForServices({
+        clients: [dynamoDriver],
+        waitSeconds: 60
+      });
       await handler.models.ensure();
     });
 
     after(async function () {
       await handler.models.drop();
-      await thenify(datastar, 'close');
     });
 
     it('should successfully handle multiple event messages and put them in the database', async function () {
       const { Status, StatusHead, StatusEvent } = handler.models;
       const spec = handler._transform(fixtures.singleEvent, 'counter');
+
       await handler.event(fixtures.singleEvent);
       await handler.event(fixtures.secondEvent);
 
@@ -224,7 +232,8 @@ describe('Status-Handler', function () {
       await Promise.all([
         Status.remove(spec),
         StatusHead.remove(spec),
-        StatusEvent.remove(spec)
+        StatusEvent.remove({ ...spec, eventId: first.eventId }),
+        StatusEvent.remove({ ...spec, eventId: second.eventId })
       ]);
     });
 
@@ -238,12 +247,14 @@ describe('Status-Handler', function () {
       const status = await Status.findOne(spec);
       assume(status.complete).equals(true);
       assume(status.error).equals(false);
+      const events = await StatusEvent.findAll(spec);
       await Promise.all([
         Status.remove(spec),
         StatusHead.remove(spec),
-        StatusEvent.remove(spec),
         StatusCounter.decrement(spec, 1)
-      ]);
+      ].concat(events.map(event =>
+        StatusEvent.remove({ ...spec, eventId: event.eventId })
+      )));
     });
 
     it('should handle setting previous version when we have one as StatusHead', async function () {
@@ -259,7 +270,7 @@ describe('Status-Handler', function () {
       await Promise.all([
         Status.remove(spec),
         StatusHead.remove(spec),
-        StatusEvent.remove(spec)
+        StatusEvent.remove({ ...spec, eventId: events[0].eventId })
       ]);
     });
 
@@ -278,7 +289,8 @@ describe('Status-Handler', function () {
       await Promise.all([
         Status.remove(spec),
         StatusHead.remove(spec),
-        StatusEvent.remove(spec)
+        StatusEvent.remove({ ...spec, eventId: events[0].eventId }),
+        StatusEvent.remove({ ...spec, eventId: events[1].eventId })
       ]);
     });
 
@@ -296,12 +308,14 @@ describe('Status-Handler', function () {
         .on('finish', async () => {
           const status = await Status.findOne(spec);
           assume(status.complete).equals(true);
+          const events = await StatusEvent.findAll(spec);
           await Promise.all([
             Status.remove(spec),
             StatusHead.remove(spec),
-            StatusEvent.remove(spec),
             StatusCounter.decrement(spec, 1)
-          ]);
+          ].concat(events.map(event => {
+            StatusEvent.remove({ ...spec, eventId: event.eventId });
+          })));
           done();
         });
 

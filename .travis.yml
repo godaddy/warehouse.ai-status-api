@@ -3,10 +3,17 @@ language: node_js
 node_js:
   - "8"
   - "10"
+  - "12"
+before_install:
+# package-lock.json was introduced in npm@5
+- '[[ $(node -v) =~ ^v9.*$ ]] || npm install -g npm@latest' # skipped when using node 9
+- docker pull localstack/localstack
+- docker run -d --name localstack -p 4569:4569 --rm localstack/localstack
+install: npm install
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 services:
-  - cassandra
+  - docker
 matrix:
   fast_finish: true
   allow_failures:
