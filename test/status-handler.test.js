@@ -13,10 +13,6 @@ const config = require('../config/development.json');
 
 assume.use(require('assume-sinon'));
 
-// Need to set some values for these so localstack works in Travis
-process.env.AWS_ACCESS_KEY_ID = 'foobar';
-process.env.AWS_SECRET_ACCESS_KEY = 'foobar';
-
 const liveness = new AwsLiveness();
 
 describe('Status-Handler', function () {

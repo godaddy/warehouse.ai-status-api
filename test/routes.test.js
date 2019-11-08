@@ -7,10 +7,6 @@ const fixtures = require('./fixtures');
 const { address } = require('./util');
 const rip = require('rip-out');
 
-// Need to set some values for these so localstack works in Travis
-process.env.AWS_ACCESS_KEY_ID = 'foobar';
-process.env.AWS_SECRET_ACCESS_KEY = 'foobar';
-
 async function cleanupTables(app, spec) {
   const { Status, StatusHead, StatusEvent } = app.models;
   const events = await StatusEvent.findAll(spec);
@@ -156,7 +152,7 @@ describe('routes', function () {
       });
     });
 
-    describe.skip('initial, queued and complete events', function () {
+    describe('initial, queued and complete events', function () {
       beforeEach(async () => {
         if (!app) return;
         await status.event(fixtures.singleEvent);

@@ -5,10 +5,6 @@ const thenify = require('tinythen');
 const index = require('..');
 const { address } = require('./util');
 
-// Need to set some values for these so localstack works in Travis
-process.env.AWS_ACCESS_KEY_ID = 'foobar';
-process.env.AWS_SECRET_ACCESS_KEY = 'foobar';
-
 describe('index', function () {
   this.timeout(6E4);
   let app;

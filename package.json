@@ -8,12 +8,12 @@
   },
   "scripts": {
     "pretest": "npm run swagger",
-    "test": "nyc --reporter=lcov --reporter=text mocha test/*.test.js",
+    "test": "node test/setup.js && nyc --reporter=lcov --reporter=text mocha test/*.test.js",
     "lint": "eslint-godaddy *.js preboots/*.js routes/*.js test/*.js",
     "localstack": "docker run -it -p 4569:4569 --rm localstack/localstack:0.8.6",
     "prepublishOnly": "npm run swagger",
     "swagger": "swagger-jsdoc -d swagger/definition.js -o swagger/documentation.json",
-    "pretest": "npm run lint"
+    "posttest": "npm run lint"
   },
   "keywords": [
     "warehouse.ai",
