@@ -1,5 +1,7 @@
 # CHANGELOG
 
+- BREAKING--Convert datastar models to dynastar models
+
 ### 1.1.3
 
 - Fix spelling error in swagger docs
