@@ -186,10 +186,9 @@ class StatusHandler {
 
     // Ensure that last event is the 'queued' event from carpentd
     const lastEvent = previousEvents[previousEvents.length - 1];
-    if (!lastEvent || lastEvent.message === 'Builds Queued') {
-      return;
-    }
+    if (!lastEvent || lastEvent.message === 'Builds Queued') return;
 
+    // Prepare webhook body payload and send it to subscribed third-parties
     const body = { event: 'build_started', pkg: pkgName, version, env };
     return this._sendWebhook(body);
   }
