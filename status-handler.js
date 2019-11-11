@@ -148,8 +148,15 @@ class StatusHandler {
     this.log.info(`Ignored status event, no build occurred`, data);
   }
 
+  /**
+   * Process and dispatch webhooks
+   *
+   * @function _processWebhook
+   * @param {Object} data - Message from NSQ
+   * @returns {Promise} to resolve
+   */
   async _processWebhook(data) {
-    const { pkg, name, version, env, message } = data;
+    const { pkg, name, version, env } = data;
     const pkgName = pkg || name;
 
     const webhooks = this.webhooks[pkgName];
@@ -159,7 +166,7 @@ class StatusHandler {
     }
 
     // Fetch list of previous events for a certain build
-    const previousEvents = await Status.findAll({
+    const previousEvents = await this.models.Status.findAll({
       pkg: pkgName,
       version,
       env
