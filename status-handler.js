@@ -57,37 +57,13 @@ class StatusHandler {
     const { StatusEvent, StatusHead, Status } = this.models;
     const ev = this._transform(data, 'event');
 
-    // Fetch list of previous events for a certain build
-    const { pkg, version, env } = ev;
-    const previousEvents = await Status.findAll({
-      pkg,
-      version,
-      env
-    });
-
-    // Ensure that last event is the 'queued' event from carpentd
-    const lastEvent = previousEvents[previousEvents.length - 1];
-    if (lastEvent && lastEvent.message === 'Builds Queued') {
-      // Send webhook to external system, notifitcation, etc.
-      const webhooks = this.webhooks[pkg];
-      if (!webhooks || webhooks.length === 0) {
-        this.log.info(`No webhooks for pkg ${pkg}`, data);
-      } else {
-        try {
-          const body = { event: 'build_started', pkg, version, env };
-          const payload = { body, method: 'POST', json: true };
-          await Promise.all(webhooks.map(uri => request({ uri, ...payload })));
-        } catch (err) {
-          this.log.error('Status Handler errored %s', err.message, data);
-        }
-      }
-    }
-
     const [, head, current] = await Promise.all([
       StatusEvent.create(ev),
       StatusHead.findOne(ev),
       Status.findOne(ev)
     ]);
+
+    await this._processWebhook(data);
 
     if (!current) {
       return this._status('create', {
@@ -170,6 +146,39 @@ class StatusHandler {
    */
   async ignored(data) {
     this.log.info(`Ignored status event, no build occurred`, data);
+  }
+
+  async _processWebhook(data) {
+    const { pkg, name, version, env, message } = data;
+    const pkgName = pkg || name;
+
+    const webhooks = this.webhooks[pkgName];
+
+    if (!webhooks || webhooks.length === 0) {
+      return this.log.info(`No webhooks for pkg ${pkgName}`, data);
+    }
+
+    // Fetch list of previous events for a certain build
+    const previousEvents = await Status.findAll({
+      pkg: pkgName,
+      version,
+      env
+    });
+
+    // Ensure that last event is the 'queued' event from carpentd
+    const lastEvent = previousEvents[previousEvents.length - 1];
+    if (!lastEvent || lastEvent.message === 'Builds Queued') {
+      return;
+    }
+
+    // Send webhook to external system, notifitcation, etc.
+    try {
+      const body = { event: 'build_started', pkg, version, env };
+      const payload = { body, method: 'POST', json: true };
+      await Promise.all(webhooks.map(uri => request({ uri, ...payload })));
+    } catch (err) {
+      this.log.error('Status Handler errored %s', err.message, data);
+    }
   }
 
   /**
