@@ -75,7 +75,8 @@ class StatusHandler {
       } else {
         try {
           const body = { event: 'build_started', pkg, version, env };
-          await Promise.all(webhooks.map(uri => request({ uri, body, json: true })));
+          const payload = { body, method: 'POST', json: true };
+          await Promise.all(webhooks.map(uri => request({ uri, ...payload })));
         } catch (err) {
           this.log.error('Status Handler errored %s', err.message, data);
         }
