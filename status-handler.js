@@ -62,7 +62,7 @@ class StatusHandler {
       Status.findOne(ev)
     ]);
 
-    await this._processWebhook(data);
+    await this._processWebhooks(data);
 
     if (!current) {
       return this._status('create', {
@@ -150,11 +150,11 @@ class StatusHandler {
   /**
    * Process and dispatch webhooks
    *
-   * @function _processWebhook
+   * @function _processWebhooks
    * @param {Object} data - Message from NSQ
    * @returns {Promise} to resolve
    */
-  async _processWebhook(data) {
+  async _processWebhooks(data) {
     const { pkg, name, version, env } = data;
     const pkgName = pkg || name;
 
