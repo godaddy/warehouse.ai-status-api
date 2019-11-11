@@ -8,7 +8,7 @@
   },
   "scripts": {
     "pretest": "npm run swagger",
-    "test": "node test/setup.js && nyc --reporter=lcov --reporter=text mocha test/*.test.js",
+    "test": "nyc --reporter=lcov --reporter=text mocha --require test/setup test/*.test.js",
     "lint": "eslint-godaddy *.js preboots/*.js routes/*.js test/*.js",
     "localstack": "docker run -it -p 4569:4569 --rm localstack/localstack:0.8.6",
     "prepublishOnly": "npm run swagger",
