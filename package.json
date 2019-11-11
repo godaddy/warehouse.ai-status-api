@@ -48,7 +48,7 @@
     "tinythen": "^1.0.1",
     "uuid": "^3.3.0",
     "warehouse.ai-api-client": "^3.0.1",
-    "warehouse.ai-status-models": "^2.0.0"
+    "warehouse.ai-status-models": "^2.0.1"
   },
   "devDependencies": {
     "assume": "^2.2.0",
