@@ -175,9 +175,7 @@ class StatusHandler {
     const { pkg, name, version, env } = data;
     const pkgName = pkg || name;
 
-    if (!this._shouldSendWebhook(pkgName)) {
-      return;
-    }
+    if (!this._shouldSendWebhook(pkgName)) return;
 
     // Fetch list of previous events for a certain build
     const previousEvents = await this.models.Status.findAll({
