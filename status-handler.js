@@ -56,7 +56,6 @@ class StatusHandler {
   async event(data) {
     const { StatusEvent, StatusHead, Status } = this.models;
     const ev = this._transform(data, 'event');
-
     const [, head, current] = await Promise.all([
       StatusEvent.create(ev),
       StatusHead.findOne(ev),
