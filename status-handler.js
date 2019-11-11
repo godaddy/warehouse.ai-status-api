@@ -165,31 +165,62 @@ class StatusHandler {
   }
 
   /**
-   * Process and dispatch 'build_started' webhook
+   * Check if a build is in a queued status
    *
-   * @function _sendBuildStartedWebhook
-   * @param {Object} data - Message from NSQ
-   * @returns {Promise} to resolve
+   * @function _isBuildQueued
+   * @param {Object} build - Build params
+   * @param {String} build.pkg - The package name
+   * @param {String} build.version - The package version
+   * @param {String} build.env - The build environnement
+   * @returns {String} the package name
    */
-  async _sendBuildStartedWebhook(data) {
-    const { pkg, name, version, env } = data;
-    const pkgName = pkg || name;
-
-    if (!this._shouldSendWebhook(pkgName)) return;
-
+  async _isBuildQueued(build) {
     // Fetch list of previous events for a certain build
-    const previousEvents = await this.models.Status.findAll({
-      pkg: pkgName,
-      version,
-      env
-    });
+    const previousEvents = await this.models.Status.findAll(build);
 
     // Ensure that last event is the 'queued' event from carpentd
     const lastEvent = previousEvents[previousEvents.length - 1];
-    if (!lastEvent || lastEvent.message === 'Builds Queued') return;
+    if (lastEvent && lastEvent.message === 'Builds Queued') return true;
+    return false;
+  }
 
-    // Prepare webhook body payload and send it to subscribed third-parties
-    const body = { event: 'build_started', pkg: pkgName, version, env };
+  /**
+   * Get package name from NSQ message
+   *
+   * @function _getPackageName
+   * @param {Object} data - Message from NSQ
+   * @returns {String} the package name
+   */
+  _getPackageName(data) {
+    return data.pkg || data.name;
+  }
+
+  /**
+   * Process and dispatch a webhook
+   *
+   * @function _dispatchWebhook
+   * @param {String} event - Webhook event type
+   * @param {Object} data - Message from NSQ
+   * @returns {Promise} to resolve
+   */
+  async _dispatchWebhook(event, data) {
+    const { version, env } = data;
+    const pkg = this._getPackageName(data);
+
+    if (!this._shouldSendWebhook(pkg)) return;
+
+    let body;
+
+    switch (event) {
+      case 'build_started':
+        if (!await this._isBuildQueued({ pkg, version, env })) return;
+        body = { event, pkg, version, env };
+        break;
+      default:
+        throw new Error(`'${event}' is not a valid webhook type`);
+    }
+
+    // Send webhook to subscribed third-parties
     return this._sendWebhook(body);
   }
 
@@ -248,9 +279,10 @@ class StatusHandler {
    * @returns {Object} normalized database record
    */
   _transform(data, type) {
-    const { pkg, name, version, env, message, details, total, error, locale } = data;
+    const { version, env, message, details, total, error, locale } = data;
+
     const ret = { version, env };
-    ret.pkg = pkg || name;
+    ret.pkg = this._getPackageName(data);
 
     switch (type) {
       case 'status':
