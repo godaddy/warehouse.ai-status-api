@@ -62,7 +62,7 @@ class StatusHandler {
       Status.findOne(ev)
     ]);
 
-    await this._processWebhooks(data);
+    await this._sendBuildStartedWebhook(data);
 
     if (!current) {
       return this._status('create', {
@@ -148,20 +148,36 @@ class StatusHandler {
   }
 
   /**
-   * Process and dispatch webhooks
+   * Check if there are third-party apps that
+   * subscribed for webhooks for a specific package
    *
-   * @function _processWebhooks
+   * @function _shouldSendWebhook
+   * @param {String} pkg - The name of the package
+   * @returns {Boolean} the computed value
+   */
+  _shouldSendWebhook(pkg) {
+    const webhooks = this.webhooks[pkg];
+
+    if (!webhooks || webhooks.length === 0) {
+      this.log.info(`No webhooks for pkg ${pkg}`);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Process and dispatch 'build_started' webhook
+   *
+   * @function _sendBuildStartedWebhook
    * @param {Object} data - Message from NSQ
    * @returns {Promise} to resolve
    */
-  async _processWebhooks(data) {
+  async _sendBuildStartedWebhook(data) {
     const { pkg, name, version, env } = data;
     const pkgName = pkg || name;
 
-    const webhooks = this.webhooks[pkgName];
-
-    if (!webhooks || webhooks.length === 0) {
-      return this.log.info(`No webhooks for pkg ${pkgName}`, data);
+    if (!this._shouldSendWebhook(pkgName)) {
+      return;
     }
 
     // Fetch list of previous events for a certain build
@@ -177,14 +193,26 @@ class StatusHandler {
       return;
     }
 
-    // Send webhook to external system, notifitcation, etc.
+    const body = { event: 'build_started', pkg: pkgName, version, env };
+    return this._sendWebhook(body);
+  }
+
+  /**
+   * Send webhook to third-party applications
+   *
+   * @function _sendWebhook
+   * @param {Object} body - Webhook body payload
+   * @returns {Promise} to resolve
+   */
+  async _sendWebhook(body) {
+    const webhooks = this.webhooks[body.pkg];
     try {
-      const body = { event: 'build_started', pkg, version, env };
-      const payload = { body, method: 'POST', json: true };
-      await Promise.all(webhooks.map(uri => request({ uri, ...payload })));
+      const params = { body, method: 'POST', json: true };
+      await Promise.all(webhooks.map(uri => request({ uri, ...params })));
     } catch (err) {
-      this.log.error('Status Handler errored %s', err.message, data);
+      this.log.error('Status Handler errored %s', err.message, body);
     }
+    return Promise.resolve(); // hack valid-jsdoc
   }
 
   /**
