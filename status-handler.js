@@ -1,6 +1,7 @@
 const parallel = require('parallel-transform');
 const diagnostics = require('diagnostics');
 const rip = require('rip-out');
+const request = require('request-promise-native');
 const uuid = require('uuid');
 const Progress = require('./progress');
 
@@ -27,6 +28,7 @@ class StatusHandler {
     this.progress = opts.progress || new Progress(this.models);
     this.conc = opts.conc || 10;
     this.log = opts.log || defaultLogger;
+    this.webhooks = opts.webhooks || {};
   }
 
   /**
@@ -54,6 +56,32 @@ class StatusHandler {
   async event(data) {
     const { StatusEvent, StatusHead, Status } = this.models;
     const ev = this._transform(data, 'event');
+
+    // Fetch list of previous events for a certain build
+    const { pkg, version, env } = ev;
+    const previousEvents = await Status.findAll({
+      pkg,
+      version,
+      env
+    });
+
+    // Ensure that last event is the 'queued' event from carpentd
+    const lastEvent = previousEvents[previousEvents.length - 1];
+    if (lastEvent && lastEvent.message === 'Builds Queued') {
+      // Send webhook to external system, notifitcation, etc.
+      const webhooks = this.webhooks[pkg];
+      if (!webhooks || webhooks.length === 0) {
+        this.log.info(`No webhooks for pkg ${pkg}`, data);
+      } else {
+        try {
+          const body = { event: 'build_started', pkg, version, env };
+          await Promise.all(webhooks.map(uri => request({ uri, body, json: true })));
+        } catch (err) {
+          this.log.error('Status Handler errored %s', err.message, data);
+        }
+      }
+    }
+
     const [, head, current] = await Promise.all([
       StatusEvent.create(ev),
       StatusHead.findOne(ev),

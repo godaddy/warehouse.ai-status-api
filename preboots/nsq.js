@@ -38,7 +38,8 @@ module.exports = function nsqboot(app, options, callback) {
 
   app.nsq.handler = new StatusHandler({
     conc: app.config.get('nsq:concurrency'),
-    models: app.models
+    models: app.models,
+    webhooks: app.webhooks
   });
 
 
@@ -65,5 +66,3 @@ module.exports = function nsqboot(app, options, callback) {
 
   callback();
 };
-
-
