@@ -14,6 +14,7 @@ exports.secondEvent = {
   version: '1.0.0',
   env: 'dev',
   message: 'Npm install has completed',
+  details: 'Start developing!!!'
 };
 
 exports.singleComplete = {

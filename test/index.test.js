@@ -19,6 +19,7 @@ describe('index', function () {
   after(async function () {
     if (!app) return;
     await app.models.drop();
+    console.log('models dropped');
     await thenify(app, 'close');
   });
 

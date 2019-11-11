@@ -25,8 +25,8 @@ function assumeEvent(event) {
   assume(event.error).is.falsey();
 }
 
-describe('routes', function () {
-  describe('integration', function () {
+describe.skip('routes', function () {
+  describe.skip('integration', function () {
     this.timeout(6E4);
     let status;
     let app;
@@ -152,7 +152,7 @@ describe('routes', function () {
       });
     });
 
-    describe('initial, queued and complete events', function () {
+    describe.skip('initial, queued and complete events', function () {
       beforeEach(async () => {
         if (!app) return;
         await status.event(fixtures.singleEvent);
