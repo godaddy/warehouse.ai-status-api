@@ -239,7 +239,7 @@ class StatusHandler {
     } catch (err) {
       this.log.error('Status Handler errored %s', err.message, body);
     }
-    return Promise.resolve(); // hack valid-jsdoc
+    return Promise.resolve(); // Hack valid-jsdoc. See issue https://github.com/eslint/eslint/issues/7307
   }
 
   /**
