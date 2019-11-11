@@ -4,20 +4,8 @@ const thenify = require('tinythen');
 const request = require('request-promise-native');
 const StatusHandler = require('../status-handler');
 const fixtures = require('./fixtures');
-const { address } = require('./util');
+const { address, cleanupTables } = require('./util');
 const rip = require('rip-out');
-
-async function cleanupTables(app, spec) {
-  const { Status, StatusHead, StatusEvent } = app.models;
-  const events = await StatusEvent.findAll(spec);
-
-  return Promise.all([
-    Status.remove(spec),
-    StatusHead.remove(spec)
-  ].concat(events.map(event =>
-    StatusEvent.remove({ ...spec, eventId: event.eventId })
-  )));
-}
 
 function assumeEvent(event) {
   assume(event.message).exists();
@@ -25,8 +13,8 @@ function assumeEvent(event) {
   assume(event.error).is.falsey();
 }
 
-describe.skip('routes', function () {
-  describe.skip('integration', function () {
+describe('routes', function () {
+  describe('integration', function () {
     this.timeout(6E4);
     let status;
     let app;
@@ -104,7 +92,7 @@ describe.skip('routes', function () {
 
       afterEach(async () => {
         if (!app) return;
-        await cleanupTables(app, spec);
+        await cleanupTables(app.models, spec);
       });
     });
 
@@ -148,11 +136,11 @@ describe.skip('routes', function () {
 
       afterEach(async () => {
         if (!app) return;
-        await cleanupTables(app, spec);
+        await cleanupTables(app.models, spec);
       });
     });
 
-    describe.skip('initial, queued and complete events', function () {
+    describe('initial, queued and complete events', function () {
       beforeEach(async () => {
         if (!app) return;
         await status.event(fixtures.singleEvent);
@@ -196,7 +184,7 @@ describe.skip('routes', function () {
         if (!app) return;
         const { StatusCounter } = app.models;
         await StatusCounter.decrement(spec, 1);
-        await cleanupTables(app, spec);
+        await cleanupTables(app.models, spec);
       });
     });
 

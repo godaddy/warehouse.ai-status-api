@@ -10,22 +10,11 @@ const through = require('through2');
 const StatusHandler = require('../status-handler');
 const fixtures = require('./fixtures');
 const config = require('../config/development.json');
+const { cleanupTables } = require('./util');
 
 assume.use(require('assume-sinon'));
 
 const liveness = new AwsLiveness();
-
-async function cleanupTables(models, spec) {
-  const { Status, StatusHead, StatusEvent } = models;
-  const events = await StatusEvent.findAll(spec);
-
-  return Promise.all([
-    Status.remove(spec),
-    StatusHead.remove(spec)
-  ].concat(events.map(event =>
-    StatusEvent.remove({ ...spec, eventId: event.eventId })
-  )));
-}
 
 describe('Status-Handler', function () {
   describe('unit', function () {
@@ -211,15 +200,14 @@ describe('Status-Handler', function () {
         waitSeconds: 60
       });
       await handler.models.ensure();
-      const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
       const spec = handler._transform(fixtures.singleEvent, 'counter');
 
-      let x = 0;
-      while (x < 5) {
-        const prevents = await StatusEvent.findAll(spec);
-        console.log('prevents:', prevents);
-        x += 1;
-      }
+      // I know this is bad code smell, but localstack keeps queueing up a
+      // mysterious insert somewhere in the first second of its launch, and
+      // this is a workaround for that.
+      const wait = ms => new Promise((r) => setTimeout(r, ms));
+      await wait(1000);
+      await cleanupTables(handler.models, spec);
     });
 
     after(async function () {
@@ -227,7 +215,7 @@ describe('Status-Handler', function () {
     });
 
     it('should successfully handle multiple event messages and put them in the database', async function () {
-      const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
+      const { Status, StatusHead, StatusEvent } = handler.models;
       const spec = handler._transform(fixtures.singleEvent, 'counter');
 
       await handler.event(fixtures.singleEvent);
