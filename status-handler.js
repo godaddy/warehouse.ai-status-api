@@ -157,7 +157,6 @@ class StatusHandler {
    */
   _shouldSendWebhook(pkg) {
     const webhooks = this.webhooks[pkg];
-
     if (!webhooks || webhooks.length === 0) {
       this.log.info(`No webhooks for pkg ${pkg}`);
       return false;
