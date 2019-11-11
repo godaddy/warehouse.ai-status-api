@@ -11,5 +11,16 @@
     "apiVersion": "2012-08-10",
     "endpoint": "http://localhost:4569",
     "region": "us-west-1"
+  },
+  "webhooks": {
+    "https://example.com/webhooks": [
+      "package1",
+      "package2"
+    ],
+    "https://carpediem.com/webhooks": [
+      "package2",
+      "package3",
+      "package4"
+    ]
   }
 }
