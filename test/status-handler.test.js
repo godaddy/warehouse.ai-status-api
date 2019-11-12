@@ -187,6 +187,7 @@ describe('Status-Handler', function () {
   describe('integration', function () {
     this.timeout(6E4);
     let handler;
+    let spec;
 
     before(async function () {
       const dynamoDriver = new AWS.DynamoDB(config.dynamodb);
@@ -200,13 +201,20 @@ describe('Status-Handler', function () {
         waitSeconds: 60
       });
       await handler.models.ensure();
-      const spec = handler._transform(fixtures.singleEvent, 'counter');
+      const cleanupSpec = handler._transform(fixtures.singleEvent, 'counter');
 
       // I know this is bad code smell, but localstack keeps queueing up a
       // mysterious insert somewhere in the first second of its launch, and
       // this is a workaround for that.
       const wait = ms => new Promise((r) => setTimeout(r, ms));
       await wait(1000);
+      await cleanupTables(handler.models, cleanupSpec);
+    });
+
+    afterEach(async function () {
+      if (!handler) return;
+      // const { StatusCounter } = handler.models;
+      // await StatusCounter.decrement(spec, 1);
       await cleanupTables(handler.models, spec);
     });
 
@@ -216,7 +224,7 @@ describe('Status-Handler', function () {
 
     it('should successfully handle multiple event messages and put them in the database', async function () {
       const { Status, StatusHead, StatusEvent } = handler.models;
-      const spec = handler._transform(fixtures.singleEvent, 'counter');
+      spec = handler._transform(fixtures.singleEvent, 'counter');
 
       await handler.event(fixtures.singleEvent);
       await handler.event(fixtures.secondEvent);
@@ -234,18 +242,11 @@ describe('Status-Handler', function () {
       const [first, second] = events;
       assume(first.message).equals(fixtures.singleEvent.message);
       assume(second.message).equals(fixtures.secondEvent.message);
-      await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusEvent.remove({ ...spec, eventId: first.eventId }),
-        StatusEvent.remove({ ...spec, eventId: second.eventId })
-      ]);
     });
 
     it('should handle initial event, queued and complete event for 1 build', async function () {
-      console.log('beginning next test');
       const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
-      const spec = handler._transform(fixtures.singleQueued, 'counter');
+      spec = handler._transform(fixtures.singleQueued, 'counter');
       await handler.event(fixtures.singleEvent);
       await handler.queued(fixtures.singleQueued);
       await handler.complete(fixtures.singleComplete);
@@ -254,18 +255,11 @@ describe('Status-Handler', function () {
       assume(status.complete).equals(true);
       assume(status.error).equals(false);
       const events = await StatusEvent.findAll(spec);
-      await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusCounter.decrement(spec, 1)
-      ].concat(events.map(event =>
-        StatusEvent.remove({ ...spec, eventId: event.eventId })
-      )));
     });
 
     it('should handle setting previous version when we have one as StatusHead', async function () {
       const { StatusHead, Status, StatusEvent } = handler.models;
-      const spec = handler._transform(fixtures.singleEvent);
+      spec = handler._transform(fixtures.singleEvent);
 
       await StatusHead.create(fixtures.previousStatusHead);
       await handler.event(fixtures.singleEvent);
@@ -273,16 +267,11 @@ describe('Status-Handler', function () {
       assume(status.previousVersion).equals(fixtures.previousStatusHead.version);
       const events = await StatusEvent.findAll(spec);
       assume(events).is.length(1);
-      await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusEvent.remove({ ...spec, eventId: events[0].eventId })
-      ]);
     });
 
     it('should handle error case', async function () {
       const { StatusHead, Status, StatusEvent } = handler.models;
-      const spec = handler._transform(fixtures.singleEvent);
+      spec = handler._transform(fixtures.singleEvent);
 
       await handler.event(fixtures.singleEvent);
       await handler.error(fixtures.singleError);
@@ -291,18 +280,11 @@ describe('Status-Handler', function () {
       assume(status.error).equals(true);
       const events = await StatusEvent.findAll(spec);
       assume(events).is.length(2);
-
-      await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusEvent.remove({ ...spec, eventId: events[0].eventId }),
-        StatusEvent.remove({ ...spec, eventId: events[1].eventId })
-      ]);
     });
 
     it('should handle a series of events via stream', function (done) {
       const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
-      const spec = handler._transform(fixtures.singleEvent);
+      spec = handler._transform(fixtures.singleEvent);
       const source = through.obj();
 
       source
@@ -315,13 +297,6 @@ describe('Status-Handler', function () {
           const status = await Status.findOne(spec);
           assume(status.complete).equals(true);
           const events = await StatusEvent.findAll(spec);
-          await Promise.all([
-            Status.remove(spec),
-            StatusHead.remove(spec),
-            StatusCounter.decrement(spec, 1)
-          ].concat(events.map(event => {
-            StatusEvent.remove({ ...spec, eventId: event.eventId });
-          })));
           done();
         });
 

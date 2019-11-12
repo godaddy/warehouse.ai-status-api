@@ -15,7 +15,7 @@ exports.address = function address(app, pathname, spec = {}) {
 };
 
 exports.cleanupTables = async function (models, spec) {
-  const { Status, StatusHead, StatusEvent } = models;
+  const { Status, StatusHead, StatusEvent, StatusCounter } = models;
   const events = await StatusEvent.findAll(spec);
 
   return Promise.all([
