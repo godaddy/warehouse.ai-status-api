@@ -180,7 +180,7 @@ class StatusHandler {
    */
   async _isBuildQueued(build) {
     // Fetch list of previous events for a certain build
-    const previousEvents = await this.models.Status.findAll(build);
+    const previousEvents = await this.models.StatusEvent.findAll(build);
 
     // Ensure that last event is the 'queued' event from carpentd
     const lastEvent = previousEvents[previousEvents.length - 1];

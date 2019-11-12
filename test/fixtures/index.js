@@ -52,7 +52,7 @@ exports.singleQueued = {
   name: 'whatever',
   version: '1.0.0',
   env: 'dev',
-  message: 'builds were queued',
+  message: 'Builds Queued',
   total: 1
 };
 
@@ -61,5 +61,3 @@ exports.previousStatusHead = {
   env: 'dev',
   pkg: 'whatever'
 };
-
-

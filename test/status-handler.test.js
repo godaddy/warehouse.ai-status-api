@@ -9,6 +9,7 @@ const StatusHandler = require('../status-handler');
 const fixtures = require('./fixtures');
 const cassConfig = require('./cassandra.json');
 const through = require('through2');
+const nock = require('nock');
 
 assume.use(require('assume-sinon'));
 
@@ -39,6 +40,33 @@ describe('Status-Handler', function () {
       it('should check if a package has registered endpoints', function () {
         assume(status._shouldSendWebhook('whatever')).equals(true);
         assume(status._shouldSendWebhook('whatever2')).equals(false);
+      });
+    });
+
+    describe('_isBuildQueued', function () {
+      it('should check if a build is queued', async function () {
+        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
+          .resolves([fixtures.secondEvent, fixtures.singleQueued]);
+        const { pkg, version, env } = fixtures.singleQueued;
+        const result = await status._isBuildQueued({ pkg, version, env });
+        assume(findAllStub).is.calledWith({ pkg, version, env });
+        assume(result).equals(true);
+        sinon.restore();
+      });
+    });
+
+    describe('_dispatchWebhook', function () {
+      it('should dispatch build_started webhook', async function () {
+        const shouldSendStub = sinon.stub(status, '_shouldSendWebhook').resolves(true);
+        const isBuildStub = sinon.stub(status, '_isBuildQueued').resolves(true);
+        const sendStub = sinon.stub(status, '_sendWebhook').resolves();
+        await status._dispatchWebhook('build_started', fixtures.singleEvent);
+        const { name: pkg, version, env } = fixtures.singleEvent;
+        const build = { pkg, version, env };
+        assume(shouldSendStub).is.calledWith(fixtures.singleEvent.name);
+        assume(isBuildStub).is.calledWith(build);
+        assume(sendStub).is.calledWith({ pkg, version, env, event: 'build_started' });
+        sinon.restore();
       });
     });
 
@@ -207,9 +235,13 @@ describe('Status-Handler', function () {
 
     before(async function () {
       datastar = new Datastar(cassConfig);
-
       handler = new StatusHandler({
         models: models(datastar),
+        webhooks: {
+          whatever: [
+            'https://example.com/webhooks'
+          ]
+        },
         conc: 1
       });
       await thenify(datastar, 'connect');
@@ -219,6 +251,8 @@ describe('Status-Handler', function () {
     after(async function () {
       await handler.models.drop();
       await thenify(datastar, 'close');
+      nock.cleanAll();
+      nock.restore();
     });
 
     it('should successfully handle multiple event messages and put them in the database', async function () {
@@ -248,15 +282,20 @@ describe('Status-Handler', function () {
     });
 
     it('should handle initial event, queued and complete event for 1 build', async function () {
+      const webhooksNock = nock('https://example.com')
+        .post('/webhooks')
+        .reply(204);
+
       const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
       const spec = handler._transform(fixtures.singleQueued, 'counter');
-      await handler.event(fixtures.singleEvent);
       await handler.queued(fixtures.singleQueued);
+      await handler.event(fixtures.singleEvent);
       await handler.complete(fixtures.singleComplete);
 
       const status = await Status.findOne(spec);
       assume(status.complete).equals(true);
       assume(status.error).equals(false);
+      assume(webhooksNock.isDone()).equals(true);
       await Promise.all([
         Status.remove(spec),
         StatusHead.remove(spec),
