@@ -182,8 +182,6 @@ describe('routes', function () {
 
       afterEach(async () => {
         if (!app) return;
-        const { StatusCounter } = app.models;
-        await StatusCounter.decrement(spec, 1);
         await cleanupTables(app.models, spec);
       });
     });

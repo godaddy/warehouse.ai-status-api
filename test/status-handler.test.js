@@ -213,8 +213,6 @@ describe('Status-Handler', function () {
 
     afterEach(async function () {
       if (!handler) return;
-      // const { StatusCounter } = handler.models;
-      // await StatusCounter.decrement(spec, 1);
       await cleanupTables(handler.models, spec);
     });
 
@@ -245,7 +243,7 @@ describe('Status-Handler', function () {
     });
 
     it('should handle initial event, queued and complete event for 1 build', async function () {
-      const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
+      const { Status } = handler.models;
       spec = handler._transform(fixtures.singleQueued, 'counter');
       await handler.event(fixtures.singleEvent);
       await handler.queued(fixtures.singleQueued);
@@ -254,7 +252,6 @@ describe('Status-Handler', function () {
       const status = await Status.findOne(spec);
       assume(status.complete).equals(true);
       assume(status.error).equals(false);
-      const events = await StatusEvent.findAll(spec);
     });
 
     it('should handle setting previous version when we have one as StatusHead', async function () {
@@ -270,7 +267,7 @@ describe('Status-Handler', function () {
     });
 
     it('should handle error case', async function () {
-      const { StatusHead, Status, StatusEvent } = handler.models;
+      const { Status, StatusEvent } = handler.models;
       spec = handler._transform(fixtures.singleEvent);
 
       await handler.event(fixtures.singleEvent);
@@ -283,7 +280,7 @@ describe('Status-Handler', function () {
     });
 
     it('should handle a series of events via stream', function (done) {
-      const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
+      const { Status } = handler.models;
       spec = handler._transform(fixtures.singleEvent);
       const source = through.obj();
 
@@ -296,7 +293,6 @@ describe('Status-Handler', function () {
         .on('finish', async () => {
           const status = await Status.findOne(spec);
           assume(status.complete).equals(true);
-          const events = await StatusEvent.findAll(spec);
           done();
         });
 

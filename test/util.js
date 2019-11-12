@@ -20,6 +20,7 @@ exports.cleanupTables = async function (models, spec) {
 
   return Promise.all([
     Status.remove(spec),
+    StatusCounter.remove(spec),
     StatusHead.remove(spec)
   ].concat(events.map(event =>
     StatusEvent.remove({ ...spec, eventId: event.eventId })
