@@ -62,7 +62,11 @@ class StatusHandler {
       Status.findOne(ev)
     ]);
 
-    await this._dispatchWebhook('build_started', data);
+    try {
+      await this._dispatchWebhook('build_started', data);
+    } catch (err) {
+      this.log.error('Status Handler errored %s', err.message, data);
+    }
 
     if (!current) {
       return this._status('create', {
@@ -231,15 +235,10 @@ class StatusHandler {
    * @param {Object} body - Webhook body payload
    * @returns {Promise} to resolve
    */
-  async _sendWebhook(body) {
+  _sendWebhook(body) {
     const webhooks = this.webhooks[body.pkg];
-    try {
-      const params = { body, method: 'POST', json: true };
-      await Promise.all(webhooks.map(uri => request({ uri, ...params })));
-    } catch (err) {
-      this.log.error('Status Handler errored %s', err.message, body);
-    }
-    return Promise.resolve(); // Hack valid-jsdoc. See issue https://github.com/eslint/eslint/issues/7307
+    const params = { body, method: 'POST', json: true };
+    return Promise.all(webhooks.map(uri => request({ uri, ...params })));
   }
 
   /**
