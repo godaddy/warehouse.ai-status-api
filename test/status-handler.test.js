@@ -19,7 +19,26 @@ describe('Status-Handler', function () {
     before(() => {
       const data = helpers.connectDatastar({ mock: true }, mocks.datastar());
       status = new StatusHandler({
-        models: models(data)
+        models: models(data),
+        webhooks: {
+          whatever: [
+            'http://example.com/webhooks'
+          ]
+        }
+      });
+    });
+
+    describe('_getPackageName', function () {
+      it('should return the package name', function () {
+        const pkg = status._getPackageName(fixtures.singleQueued);
+        assume(pkg).equals('whatever');
+      });
+    });
+
+    describe('_shouldSendWebhook', function () {
+      it('should check if a package has registered endpoints', function () {
+        assume(status._shouldSendWebhook('whatever')).equals(true);
+        assume(status._shouldSendWebhook('whatever2')).equals(false);
       });
     });
 

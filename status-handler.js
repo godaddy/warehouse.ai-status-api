@@ -62,7 +62,7 @@ class StatusHandler {
       Status.findOne(ev)
     ]);
 
-    await this._dispatchWebhook(data);
+    await this._dispatchWebhook('build_started', data);
 
     if (!current) {
       return this._status('create', {
