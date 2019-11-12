@@ -206,7 +206,7 @@ describe('Status-Handler', function () {
       // I know this is bad code smell, but localstack keeps queueing up a
       // mysterious insert somewhere in the first second of its launch, and
       // this is a workaround for that.
-      const wait = ms => new Promise((r) => setTimeout(r, ms));
+      const wait = ms => new Promise(r => setTimeout(r, ms));
       await wait(1000);
       await cleanupTables(handler.models, cleanupSpec);
     });
