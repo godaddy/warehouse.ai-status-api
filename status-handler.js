@@ -11,6 +11,7 @@ const defaultLogger = {
   error: diagnostics('warehouse.ai-status-api:status-handler:error')
 };
 
+const BUILD_STARTED = 'build_started';
 
 /**
  * StatusHandler class for receiving messages from NSQ and taking the right
@@ -62,11 +63,10 @@ class StatusHandler {
       Status.findOne(ev)
     ]);
 
-    try {
-      await this._dispatchWebhook('build_started', data);
-    } catch (err) {
-      this.log.error('Status Handler errored %s', err.message, data);
-    }
+    this._dispatchWebhook(BUILD_STARTED, data)
+      .catch(err => {
+        this.log.error('Status Handler errored %s', err.message, data);
+      })
 
     if (!current) {
       return this._status('create', {
@@ -216,7 +216,7 @@ class StatusHandler {
     let body;
 
     switch (event) {
-      case 'build_started':
+      case BUILD_STARTED:
         if (!await this._isBuildQueued({ pkg, version, env })) return;
         body = { event, pkg, version, env };
         break;
