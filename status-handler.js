@@ -66,7 +66,7 @@ class StatusHandler {
     this._dispatchWebhook(BUILD_STARTED, data)
       .catch(err => {
         this.log.error('Status Handler errored %s', err.message, data);
-      })
+      });
 
     if (!current) {
       return this._status('create', {
@@ -238,7 +238,14 @@ class StatusHandler {
   _sendWebhook(body) {
     const webhooks = this.webhooks[body.pkg];
     const params = { body, method: 'POST', json: true };
-    return Promise.all(webhooks.map(uri => request({ uri, ...params })));
+    return Promise.all(webhooks.map(async uri => {
+      // Do not fail the other webhook requests if one fais
+      try {
+        await request({ uri, ...params });
+      } catch (err) {
+        this.log.error(`Failed sending webhook for package %s`, body.pkg, body);
+      }
+    }));
   }
 
   /**
