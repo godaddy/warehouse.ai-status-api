@@ -29,6 +29,10 @@ describe('Status-Handler', function () {
       });
     });
 
+    afterEach(() => {
+      sinon.restore();
+    });
+
     describe('_getPackageName', function () {
       it('should return the package name', function () {
         const pkg = status._getPackageName(fixtures.singleQueued);
@@ -51,7 +55,6 @@ describe('Status-Handler', function () {
         const result = await status._isBuildQueued(fixtures.singleFetchedTarball);
         assume(findAllStub).is.calledWith({ pkg, version, env });
         assume(result).equals(true);
-        sinon.restore();
       });
 
       it('should detect the build is not queued', async function () {
@@ -61,7 +64,6 @@ describe('Status-Handler', function () {
         const result = await status._isBuildQueued(fixtures.singleFetchedTarball);
         assume(findAllStub).is.calledWith({ pkg, version, env });
         assume(result).equals(false);
-        sinon.restore();
       });
     });
 
@@ -75,7 +77,6 @@ describe('Status-Handler', function () {
         assume(shouldSendStub).is.calledWith(pkg);
         assume(isBuildStub).is.calledWith(fixtures.singleEvent);
         assume(sendStub).is.calledWith({ pkg, version, env, event: 'build_started' });
-        sinon.restore();
       });
     });
 
@@ -130,7 +131,6 @@ describe('Status-Handler', function () {
         assume(headfindstub).is.called(1);
         assume(statcreatestub).is.called(1);
         assume(headcreatestub).is.called(1);
-        sinon.restore();
       });
 
       it('should not create status when there is already a current Status record', async function () {
@@ -147,7 +147,6 @@ describe('Status-Handler', function () {
         assume(headfindstub).is.called(1);
         assume(statcreatestub).is.not.called();
         assume(headcreatestub).is.not.called();
-        sinon.restore();
       });
 
       it('should error when any database call errors', async function () {
@@ -156,7 +155,6 @@ describe('Status-Handler', function () {
         sinon.stub(status.models.StatusHead, 'findOne').resolves();
 
         await assume(status.event(fixtures.singleEvent)).throwsAsync();
-        sinon.restore();
       });
     });
 
@@ -169,7 +167,6 @@ describe('Status-Handler', function () {
         await status.queued(fixtures.singleQueued);
         assume(statupdatestub).is.called(1);
         assume(headupdatestub).is.called(1);
-        sinon.restore();
       });
 
       it('should throw an error if status fails to update', async function () {
@@ -177,7 +174,6 @@ describe('Status-Handler', function () {
         sinon.stub(status.models.StatusHead, 'update').resolves();
 
         await assume(status.queued(fixtures.singleQueued)).throwsAsync();
-        sinon.restore();
       });
     });
 
@@ -189,7 +185,6 @@ describe('Status-Handler', function () {
         await status.error(fixtures.singleError);
         assume(statusupdatestub).is.called(1);
         assume(eventstub).is.called();
-        sinon.restore();
       });
 
       it('should error when a database call errors', async function () {
@@ -197,7 +192,6 @@ describe('Status-Handler', function () {
         sinon.stub(status, 'event').rejects();
 
         await assume(status.error(fixtures.singleError)).throwsAsync();
-        sinon.restore();
       });
     });
 
@@ -215,14 +209,12 @@ describe('Status-Handler', function () {
         assume(statusfindstub).is.called(1);
         assume(statusupdatestub).is.called(1);
         assume(statuseventcreatestub).is.called(1);
-        sinon.restore();
       });
 
       it('should error if a database call errors', async function () {
         sinon.stub(status.models.StatusCounter, 'increment').rejects();
 
         await assume(status.complete(fixtures.singleComplete)).throwsAsync();
-        sinon.restore();
       });
     });
 
@@ -232,7 +224,6 @@ describe('Status-Handler', function () {
 
         await status.ignored(fixtures.singleEvent);
         assume(info).is.called(1);
-        sinon.restore();
       });
     });
   });
