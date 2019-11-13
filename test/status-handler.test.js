@@ -15,6 +15,7 @@ const { cleanupTables } = require('./util');
 assume.use(require('assume-sinon'));
 
 const liveness = new AwsLiveness();
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
 describe('Status-Handler', function () {
   describe('unit', function () {
@@ -203,10 +204,12 @@ describe('Status-Handler', function () {
       await handler.models.ensure();
       const cleanupSpec = handler._transform(fixtures.singleEvent, 'counter');
 
-      // I know this is bad code smell, but localstack keeps queueing up a
-      // mysterious insert somewhere in the first second of its launch, and
-      // this is a workaround for that.
-      const wait = ms => new Promise(r => setTimeout(r, ms));
+      // I know this is bad code smell, but when this suite is run after routes.test.js,
+      // localstack fails to delete the existing rows before dropping the table,
+      // and then queues up an insert to add these rows back to the new table
+      // somewhere in the first second of its launch. Rather than force the
+      // test order of execution, I have decided to be defensive against this
+      // behavior by waiting a second and then cleaning up the tables.
       await wait(1000);
       await cleanupTables(handler.models, cleanupSpec);
     });
