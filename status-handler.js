@@ -195,19 +195,23 @@ class StatusHandler {
 
     const lastEvent = previousEvents[nEvents - 1];
 
-    // Ensure that last event is the 'queued' event from carpentd
+    // Ensure that second last event is 'Builds Queued' from carpentd
+    // and that current event is 'Fetched tarball' from carpentd-worker
     if (
-      lastEvent.message === MSG_BUILD_QUEUED &&
-      data.message === MSG_FETCHED_TARBALL
+      lastEvent.message === MSG_FETCHED_TARBALL &&
+      lastEvent.locale === data.locale &&
+      data.message === MSG_FETCHED_TARBALL &&
+      previousEvents[nEvents - 2].message === MSG_BUILD_QUEUED &&
+      nEvents > 1
     ) {
       return true;
     }
 
+    // Same as before but in the case Eventual Costiency made
+    // the current event written in the database still not be present on read
     if (
-      lastEvent.message === MSG_FETCHED_TARBALL &&
-      lastEvent.locale === data.locale &&
-      previousEvents[nEvents - 2].message === MSG_BUILD_QUEUED &&
-      nEvents > 1
+      lastEvent.message === MSG_BUILD_QUEUED &&
+      data.message === MSG_FETCHED_TARBALL
     ) {
       return true;
     }

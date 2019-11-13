@@ -315,7 +315,7 @@ describe('Status-Handler', function () {
         .reply(204);
       const notificationsNock = nock('https://fleetcommand.godaddy.com')
         .post('/v1/warehouse')
-        .socketDelay(8000) // 8 seconds delay response header
+        .socketDelay(8000) // Idle connection to simulate a socket timeout
         .reply(504);
 
       const { Status, StatusHead, StatusEvent } = handler.models;
