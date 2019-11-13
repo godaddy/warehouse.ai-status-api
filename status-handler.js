@@ -3,6 +3,7 @@ const diagnostics = require('diagnostics');
 const rip = require('rip-out');
 const request = require('request-promise-native');
 const uuid = require('uuid');
+const pLimit = require('p-limit');
 const Progress = require('./progress');
 
 const defaultLogger = {
@@ -12,6 +13,10 @@ const defaultLogger = {
 };
 
 const BUILD_STARTED = 'build_started';
+const MSG_BUILD_QUEUED = 'Builds Queued';
+const MSG_FETCHED_TARBALL = 'Fetched tarball';
+const WEBHOOKS_CONC = 5;
+const WEBHOOK_TIMEOUT = 2000;
 
 /**
  * StatusHandler class for receiving messages from NSQ and taking the right
@@ -172,19 +177,41 @@ class StatusHandler {
    * Check if a build is in a queued status
    *
    * @function _isBuildQueued
-   * @param {Object} build - Build params
-   * @param {String} build.pkg - The package name
-   * @param {String} build.version - The package version
-   * @param {String} build.env - The build environnement
+   * @param {Object} data - Message from NSQ
    * @returns {String} the package name
    */
-  async _isBuildQueued(build) {
+  async _isBuildQueued(data) {
+    const { version, env } = data;
+    const pkg = this._getPackageName(data);
+
     // Fetch list of previous events for a certain build
-    const previousEvents = await this.models.StatusEvent.findAll(build);
+    const previousEvents = await this.models.StatusEvent.findAll({
+      pkg, version, env
+    });
+
+    const nEvents = previousEvents.length;
+
+    if (nEvents === 0) return false;
+
+    const lastEvent = previousEvents[nEvents - 1];
 
     // Ensure that last event is the 'queued' event from carpentd
-    const lastEvent = previousEvents[previousEvents.length - 1];
-    if (lastEvent && lastEvent.message === 'Builds Queued') return true;
+    if (
+      lastEvent.message === MSG_BUILD_QUEUED &&
+      data.message === MSG_FETCHED_TARBALL
+    ) {
+      return true;
+    }
+
+    if (
+      lastEvent.message === MSG_FETCHED_TARBALL &&
+      lastEvent.locale === data.locale &&
+      previousEvents[nEvents - 2].message === MSG_BUILD_QUEUED &&
+      nEvents > 1
+    ) {
+      return true;
+    }
+
     return false;
   }
 
@@ -217,7 +244,7 @@ class StatusHandler {
 
     switch (event) {
       case BUILD_STARTED:
-        if (!await this._isBuildQueued({ pkg, version, env })) return;
+        if (!await this._isBuildQueued(data)) return;
         body = { event, pkg, version, env };
         break;
       default:
@@ -237,15 +264,20 @@ class StatusHandler {
    */
   _sendWebhook(body) {
     const webhooks = this.webhooks[body.pkg];
-    const params = { body, method: 'POST', json: true };
-    return Promise.all(webhooks.map(async uri => {
+    const params = { body, method: 'POST', json: true, timeout: WEBHOOK_TIMEOUT };
+
+    const limit = pLimit(WEBHOOKS_CONC);
+
+    const sendRequest = async (uri) => {
       // Do not fail the other webhook requests if one fais
       try {
         await request({ uri, ...params });
       } catch (err) {
         this.log.error(`Failed sending webhook for package %s`, body.pkg, body);
       }
-    }));
+    };
+
+    return Promise.all(webhooks.map(uri => limit(() => sendRequest(uri))));
   }
 
   /**

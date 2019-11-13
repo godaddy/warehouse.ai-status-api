@@ -15,6 +15,15 @@ exports.secondEvent = {
   message: 'Npm install has completed',
 };
 
+exports.singleFetchedTarball = {
+  eventType: 'event',
+  locale: 'en-US',
+  message: 'Fetched tarball',
+  version: '1.0.0',
+  env: 'dev',
+  name: 'whatever'
+};
+
 exports.singleComplete = {
   eventType: 'complete',
   locale: 'en-US',

@@ -44,13 +44,23 @@ describe('Status-Handler', function () {
     });
 
     describe('_isBuildQueued', function () {
-      it('should check if a build is queued', async function () {
+      it('should detect the build is queued', async function () {
         const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
-          .resolves([fixtures.secondEvent, fixtures.singleQueued]);
-        const { pkg, version, env } = fixtures.singleQueued;
-        const result = await status._isBuildQueued({ pkg, version, env });
+          .resolves([fixtures.secondEvent, fixtures.singleQueued, fixtures.singleFetchedTarball]);
+        const { name: pkg, version, env } = fixtures.singleFetchedTarball;
+        const result = await status._isBuildQueued(fixtures.singleFetchedTarball);
         assume(findAllStub).is.calledWith({ pkg, version, env });
         assume(result).equals(true);
+        sinon.restore();
+      });
+
+      it('should detect the build is not queued', async function () {
+        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
+          .resolves([fixtures.secondEvent, fixtures.singleFetchedTarball]);
+        const { name: pkg, version, env } = fixtures.singleFetchedTarball;
+        const result = await status._isBuildQueued(fixtures.singleFetchedTarball);
+        assume(findAllStub).is.calledWith({ pkg, version, env });
+        assume(result).equals(false);
         sinon.restore();
       });
     });
@@ -62,9 +72,8 @@ describe('Status-Handler', function () {
         const sendStub = sinon.stub(status, '_sendWebhook').resolves();
         await status._dispatchWebhook('build_started', fixtures.singleEvent);
         const { name: pkg, version, env } = fixtures.singleEvent;
-        const build = { pkg, version, env };
-        assume(shouldSendStub).is.calledWith(fixtures.singleEvent.name);
-        assume(isBuildStub).is.calledWith(build);
+        assume(shouldSendStub).is.calledWith(pkg);
+        assume(isBuildStub).is.calledWith(fixtures.singleEvent);
         assume(sendStub).is.calledWith({ pkg, version, env, event: 'build_started' });
         sinon.restore();
       });
@@ -239,7 +248,8 @@ describe('Status-Handler', function () {
         models: models(datastar),
         webhooks: {
           whatever: [
-            'https://example.com/webhooks'
+            'https://example.com/webhooks',
+            'https://fleetcommand.godaddy.com/v1/warehouse'
           ]
         },
         conc: 1
@@ -282,10 +292,6 @@ describe('Status-Handler', function () {
     });
 
     it('should handle initial event, queued and complete event for 1 build', async function () {
-      const webhooksNock = nock('https://example.com')
-        .post('/webhooks')
-        .reply(204);
-
       const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
       const spec = handler._transform(fixtures.singleQueued, 'counter');
       await handler.queued(fixtures.singleQueued);
@@ -295,12 +301,50 @@ describe('Status-Handler', function () {
       const status = await Status.findOne(spec);
       assume(status.complete).equals(true);
       assume(status.error).equals(false);
-      assume(webhooksNock.isDone()).equals(true);
       await Promise.all([
         Status.remove(spec),
         StatusHead.remove(spec),
         StatusEvent.remove(spec),
         StatusCounter.decrement(spec, 1)
+      ]);
+    });
+
+    it('should send build_started webhook and be robust', async function () {
+      const webhooksNock = nock('https://example.com')
+        .post('/webhooks')
+        .reply(204);
+      const notificationsNock = nock('https://fleetcommand.godaddy.com')
+        .post('/v1/warehouse')
+        .socketDelay(8000) // 8 seconds delay response header
+        .reply(504);
+
+      const { Status, StatusHead, StatusEvent } = handler.models;
+      const spec = handler._transform(fixtures.singleQueued, 'counter');
+      await handler.event(fixtures.singleEvent);
+      await handler.queued(fixtures.singleQueued);
+
+      // Add a waiter proxy to ensure _sendWebhook completed
+      // since _dispatchWebhook is not blocking the handler.event function
+      const sendWebhook = handler._sendWebhook.bind(handler);
+      const waiter = new Promise(resolve => {
+        handler._sendWebhook = async function (body) {
+          await sendWebhook(body);
+          resolve();
+        };
+      });
+
+      await handler.event(fixtures.singleFetchedTarball);
+      await waiter;
+
+      assume(webhooksNock.isDone()).equals(true);
+      assume(notificationsNock.isDone()).equals(true);
+
+      // Restore _sendWebhook
+      handler._sendWebhook = sendWebhook;
+      await Promise.all([
+        Status.remove(spec),
+        StatusHead.remove(spec),
+        StatusEvent.remove(spec)
       ]);
     });
 
