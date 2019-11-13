@@ -294,8 +294,8 @@ describe('Status-Handler', function () {
     it('should handle initial event, queued and complete event for 1 build', async function () {
       const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
       const spec = handler._transform(fixtures.singleQueued, 'counter');
-      await handler.queued(fixtures.singleQueued);
       await handler.event(fixtures.singleEvent);
+      await handler.queued(fixtures.singleQueued);
       await handler.complete(fixtures.singleComplete);
 
       const status = await Status.findOne(spec);

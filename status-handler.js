@@ -268,16 +268,14 @@ class StatusHandler {
 
     const limit = pLimit(WEBHOOKS_CONC);
 
-    const sendRequest = async (uri) => {
+    return Promise.all(webhooks.map(uri => limit(async () => {
       // Do not fail the other webhook requests if one fais
       try {
         await request({ uri, ...params });
       } catch (err) {
         this.log.error(`Failed sending webhook for package %s`, body.pkg, body);
       }
-    };
-
-    return Promise.all(webhooks.map(uri => limit(() => sendRequest(uri))));
+    })));
   }
 
   /**
