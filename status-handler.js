@@ -207,8 +207,8 @@ class StatusHandler {
       return true;
     }
 
-    // Same as before but in the case Eventual Costiency made
-    // the current event written in the database still not be present on read
+    // Same as before but handle if StatusEvent.findAll does not return
+    // current event written in the database yet becaue of eventual consistency
     if (
       lastEvent.message === MSG_BUILD_QUEUED &&
       data.message === MSG_FETCHED_TARBALL
