@@ -12,11 +12,11 @@ const defaultLogger = {
   error: diagnostics('warehouse.ai-status-api:status-handler:error')
 };
 
+const DEFAULT_WEBHOOKS_CONCURRENCY = 5;
+const DEFAULT_WEBHOOKS_TIMEOUT = 2000;
 const BUILD_STARTED = 'build_started';
 const MSG_BUILD_QUEUED = 'Builds Queued';
 const MSG_FETCHED_TARBALL = 'Fetched tarball';
-const WEBHOOKS_CONC = 5;
-const WEBHOOK_TIMEOUT = 2000;
 
 /**
  * StatusHandler class for receiving messages from NSQ and taking the right
@@ -34,7 +34,7 @@ class StatusHandler {
     this.progress = opts.progress || new Progress(this.models);
     this.conc = opts.conc || 10;
     this.log = opts.log || defaultLogger;
-    this.webhooks = opts.webhooks || {};
+    this.webhooks = opts.webhooks || { endpoints: {}};
   }
 
   /**
@@ -165,7 +165,7 @@ class StatusHandler {
    * @returns {Boolean} the computed value
    */
   _shouldSendWebhook(pkg) {
-    const webhooks = this.webhooks[pkg];
+    const webhooks = this.webhooks.endpoints[pkg];
     if (!webhooks || webhooks.length === 0) {
       this.log.info(`No webhooks for pkg ${pkg}`);
       return false;
@@ -267,11 +267,14 @@ class StatusHandler {
    * @returns {Promise} to resolve
    */
   _sendWebhook(body) {
-    const webhooks = this.webhooks[body.pkg];
-    const params = { body, method: 'POST', json: true, timeout: WEBHOOK_TIMEOUT };
+    const {
+      concurrency = DEFAULT_WEBHOOKS_CONCURRENCY,
+      timeout = DEFAULT_WEBHOOKS_TIMEOUT
+    } = this.webhooks;
+    const webhooks = this.webhooks.endpoints[body.pkg];
 
-    const limit = pLimit(WEBHOOKS_CONC);
-
+    const limit = pLimit(concurrency);
+    const params = { body, method: 'POST', json: true, timeout };
     return Promise.all(webhooks.map(uri => limit(async () => {
       // Do not fail the other webhook requests if one fais
       try {

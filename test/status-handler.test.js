@@ -22,9 +22,11 @@ describe('Status-Handler', function () {
       status = new StatusHandler({
         models: models(data),
         webhooks: {
-          whatever: [
-            'http://example.com/webhooks'
-          ]
+          endpoints: {
+            whatever: [
+              'http://example.com/webhooks'
+            ]
+          }
         }
       });
     });
@@ -238,10 +240,12 @@ describe('Status-Handler', function () {
       handler = new StatusHandler({
         models: models(datastar),
         webhooks: {
-          whatever: [
-            'https://example.com/webhooks',
-            'https://fleetcommand.godaddy.com/v1/warehouse'
-          ]
+          endpoints: {
+            whatever: [
+              'https://example.com/webhooks',
+              'https://fleetcommand.godaddy.com/v1/warehouse'
+            ]
+          }
         },
         conc: 1
       });
