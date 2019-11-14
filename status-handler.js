@@ -195,8 +195,8 @@ class StatusHandler {
 
     const lastEvent = previousEvents[nEvents - 1];
 
-    // Ensure that second last event is 'Builds Queued' from carpentd
-    // and that current event is 'Fetched tarball' from carpentd-worker
+    // Ensure that second last event is 'Builds Queued' from carpenterd
+    // and that current event is 'Fetched tarball' from carpenterd-worker
     if (
       lastEvent.message === MSG_FETCHED_TARBALL &&
       lastEvent.locale === data.locale &&
@@ -208,7 +208,7 @@ class StatusHandler {
     }
 
     // Same as before but handle if StatusEvent.findAll does not return
-    // current event written in the database yet becaue of eventual consistency
+    // current event written in the database yet because of eventual consistency
     if (
       lastEvent.message === MSG_BUILD_QUEUED &&
       data.message === MSG_FETCHED_TARBALL
