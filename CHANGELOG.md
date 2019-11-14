@@ -1,5 +1,10 @@
 # CHANGELOG
 
+###
+
+- Add build_started webhook type
+- Add webhooks support
+
 ### 1.1.3
 
 - Fix spelling error in swagger docs

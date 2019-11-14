@@ -11,8 +11,9 @@ module.exports = function (app, options, next) {
   app.wrhs = new Warehouse(app.config.get('wrhs'));
 
   const webhooks = app.config.get().webhooks || {};
+  const endpoints = webhooks.endpoints || {};
 
-  app.webhooks = Object.entries(webhooks).reduce((acc, [endpoint, pkgs]) => {
+  app.webhookEndpoints = Object.entries(endpoints).reduce((acc, [endpoint, pkgs]) => {
     for (const pkg of pkgs) {
       acc[pkg] = acc[pkg] || [];
       acc[pkg].push(endpoint);

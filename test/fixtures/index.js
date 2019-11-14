@@ -15,6 +15,15 @@ exports.secondEvent = {
   message: 'Npm install has completed',
 };
 
+exports.singleFetchedTarball = {
+  eventType: 'event',
+  locale: 'en-US',
+  message: 'Fetched tarball',
+  version: '1.0.0',
+  env: 'dev',
+  name: 'whatever'
+};
+
 exports.singleComplete = {
   eventType: 'complete',
   locale: 'en-US',
@@ -52,7 +61,7 @@ exports.singleQueued = {
   name: 'whatever',
   version: '1.0.0',
   env: 'dev',
-  message: 'builds were queued',
+  message: 'Builds Queued',
   total: 1
 };
 
@@ -61,5 +70,3 @@ exports.previousStatusHead = {
   env: 'dev',
   pkg: 'whatever'
 };
-
-

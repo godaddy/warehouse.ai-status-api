@@ -1,7 +1,9 @@
 const parallel = require('parallel-transform');
 const diagnostics = require('diagnostics');
 const rip = require('rip-out');
+const request = require('request-promise-native');
 const uuid = require('uuid');
+const pLimit = require('p-limit');
 const Progress = require('./progress');
 
 const defaultLogger = {
@@ -10,6 +12,11 @@ const defaultLogger = {
   error: diagnostics('warehouse.ai-status-api:status-handler:error')
 };
 
+const DEFAULT_WEBHOOKS_CONCURRENCY = 5;
+const DEFAULT_WEBHOOKS_TIMEOUT = 2000;
+const BUILD_STARTED = 'build_started';
+const MSG_BUILD_QUEUED = 'Builds Queued';
+const MSG_FETCHED_TARBALL = 'Fetched tarball';
 
 /**
  * StatusHandler class for receiving messages from NSQ and taking the right
@@ -27,6 +34,7 @@ class StatusHandler {
     this.progress = opts.progress || new Progress(this.models);
     this.conc = opts.conc || 10;
     this.log = opts.log || defaultLogger;
+    this.webhooks = opts.webhooks || { endpoints: {}};
   }
 
   /**
@@ -59,6 +67,11 @@ class StatusHandler {
       StatusHead.findOne(ev),
       Status.findOne(ev)
     ]);
+
+    this._dispatchWebhook(BUILD_STARTED, data)
+      .catch(err => {
+        this.log.error('Dispatch webhook errored %s', err.message, data);
+      });
 
     if (!current) {
       return this._status('create', {
@@ -144,6 +157,135 @@ class StatusHandler {
   }
 
   /**
+   * Check if there are third-party apps that
+   * subscribed for webhooks for a specific package
+   *
+   * @function _shouldSendWebhook
+   * @param {String} pkg - The name of the package
+   * @returns {Boolean} the computed value
+   */
+  _shouldSendWebhook(pkg) {
+    const endpoints = this.webhooks.endpoints[pkg];
+    if (!endpoints || endpoints.length === 0) {
+      this.log.info(`No webhook endpoints for pkg ${pkg}`);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Check if a build is in a queued status
+   *
+   * @function _isBuildQueued
+   * @param {Object} data - Message from NSQ
+   * @returns {String} the package name
+   */
+  async _isBuildQueued(data) {
+    const { version, env } = data;
+    const pkg = this._getPackageName(data);
+
+    // Fetch list of previous events for a certain build
+    const previousEvents = await this.models.StatusEvent.findAll({
+      pkg, version, env
+    });
+
+    const nEvents = previousEvents.length;
+
+    if (nEvents === 0) return false;
+
+    const lastEvent = previousEvents[nEvents - 1];
+
+    // Ensure that second last event is 'Builds Queued' from carpenterd
+    // and that current event is 'Fetched tarball' from carpenterd-worker
+    if (
+      lastEvent.message === MSG_FETCHED_TARBALL &&
+      lastEvent.locale === data.locale &&
+      data.message === MSG_FETCHED_TARBALL &&
+      previousEvents[nEvents - 2].message === MSG_BUILD_QUEUED &&
+      nEvents > 1
+    ) {
+      return true;
+    }
+
+    // Same as before but handle if StatusEvent.findAll does not return
+    // current event written in the database yet because of eventual consistency
+    if (
+      lastEvent.message === MSG_BUILD_QUEUED &&
+      data.message === MSG_FETCHED_TARBALL
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Get package name from NSQ message
+   *
+   * @function _getPackageName
+   * @param {Object} data - Message from NSQ
+   * @returns {String} the package name
+   */
+  _getPackageName(data) {
+    return data.pkg || data.name;
+  }
+
+  /**
+   * Process and dispatch a webhook
+   *
+   * @function _dispatchWebhook
+   * @param {String} event - Webhook event type
+   * @param {Object} data - Message from NSQ
+   * @returns {Promise} to resolve
+   */
+  async _dispatchWebhook(event, data) {
+    const { version, env } = data;
+    const pkg = this._getPackageName(data);
+
+    if (!this._shouldSendWebhook(pkg)) return;
+
+    let body;
+
+    switch (event) {
+      case BUILD_STARTED:
+        if (!await this._isBuildQueued(data)) return;
+        body = { event, pkg, version, env };
+        break;
+      default:
+        throw new Error(`'${event}' is not a valid webhook type`);
+    }
+
+    // Send webhook to subscribed third-parties
+    return this._sendWebhook(body);
+  }
+
+  /**
+   * Send webhook to third-party applications
+   *
+   * @function _sendWebhook
+   * @param {Object} body - Webhook body payload
+   * @returns {Promise} to resolve
+   */
+  _sendWebhook(body) {
+    const {
+      concurrency = DEFAULT_WEBHOOKS_CONCURRENCY,
+      timeout = DEFAULT_WEBHOOKS_TIMEOUT
+    } = this.webhooks;
+    const endpoints = this.webhooks.endpoints[body.pkg];
+
+    const limit = pLimit(concurrency);
+    const params = { body, method: 'POST', json: true, timeout };
+    return Promise.all(endpoints.map(uri => limit(async () => {
+      // Do not fail the other webhook requests if one fais
+      try {
+        await request({ uri, ...params });
+      } catch (err) {
+        this.log.error(`Failed sending webhook for package %s`, body.pkg, body);
+      }
+    })));
+  }
+
+  /**
    * Create both status head and status models
    *
    * @function _status
@@ -180,9 +322,10 @@ class StatusHandler {
    * @returns {Object} normalized database record
    */
   _transform(data, type) {
-    const { pkg, name, version, env, message, details, total, error, locale } = data;
+    const { version, env, message, details, total, error, locale } = data;
+
     const ret = { version, env };
-    ret.pkg = pkg || name;
+    ret.pkg = this._getPackageName(data);
 
     switch (type) {
       case 'status':
