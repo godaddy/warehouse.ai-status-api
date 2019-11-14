@@ -41,8 +41,8 @@ module.exports = function nsqboot(app, options, callback) {
     models: app.models,
     webhooks: {
       concurrency: app.config.get('webhooks:concurrency'),
-      endpoints: app.webhookEndpoints,
-      timeout: app.config.get('webhooks:timeout')
+      timeout: app.config.get('webhooks:timeout'),
+      endpoints: app.webhookEndpoints
     }
   });
 
