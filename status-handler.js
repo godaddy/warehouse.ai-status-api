@@ -165,9 +165,9 @@ class StatusHandler {
    * @returns {Boolean} the computed value
    */
   _shouldSendWebhook(pkg) {
-    const webhooks = this.webhooks.endpoints[pkg];
-    if (!webhooks || webhooks.length === 0) {
-      this.log.info(`No webhooks for pkg ${pkg}`);
+    const endpoints = this.webhooks.endpoints[pkg];
+    if (!endpoints || endpoints.length === 0) {
+      this.log.info(`No webhook endpoints for pkg ${pkg}`);
       return false;
     }
     return true;
@@ -271,11 +271,11 @@ class StatusHandler {
       concurrency = DEFAULT_WEBHOOKS_CONCURRENCY,
       timeout = DEFAULT_WEBHOOKS_TIMEOUT
     } = this.webhooks;
-    const webhooks = this.webhooks.endpoints[body.pkg];
+    const endpoints = this.webhooks.endpoints[body.pkg];
 
     const limit = pLimit(concurrency);
     const params = { body, method: 'POST', json: true, timeout };
-    return Promise.all(webhooks.map(uri => limit(async () => {
+    return Promise.all(endpoints.map(uri => limit(async () => {
       // Do not fail the other webhook requests if one fais
       try {
         await request({ uri, ...params });
