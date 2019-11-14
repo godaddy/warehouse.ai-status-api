@@ -70,7 +70,7 @@ class StatusHandler {
 
     this._dispatchWebhook(BUILD_STARTED, data)
       .catch(err => {
-        this.log.error('Status Handler errored %s', err.message, data);
+        this.log.error('Dispatch webhook errored %s', err.message, data);
       });
 
     if (!current) {
