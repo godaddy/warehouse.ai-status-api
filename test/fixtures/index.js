@@ -17,6 +17,15 @@ exports.secondEvent = {
   details: 'Start developing!!!'
 };
 
+exports.singleFetchedTarball = {
+  eventType: 'event',
+  locale: 'en-US',
+  message: 'Fetched tarball',
+  version: '1.0.0',
+  env: 'dev',
+  name: 'whatever'
+};
+
 exports.singleComplete = {
   eventType: 'complete',
   locale: 'en-US',
@@ -55,7 +64,7 @@ exports.singleQueued = {
   name: 'whatever',
   version: '1.0.0',
   env: 'dev',
-  message: 'builds were queued',
+  message: 'Builds Queued',
   details: 'the queue is very long',
   total: 1
 };

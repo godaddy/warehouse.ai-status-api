@@ -6,6 +6,7 @@ const dynamodb = require('dynamodb-x');
 const models = require('warehouse.ai-status-models');
 const sinon = require('sinon');
 const through = require('through2');
+const nock = require('nock');
 
 const StatusHandler = require('../status-handler');
 const fixtures = require('./fixtures');
@@ -23,7 +24,65 @@ describe('Status-Handler', function () {
 
     before(() => {
       status = new StatusHandler({
-        models: models(dynamodb)
+        models: models(dynamodb),
+        webhooks: {
+          endpoints: {
+            whatever: [
+              'http://example.com/webhooks'
+            ]
+          }
+        }
+      });
+    });
+
+    afterEach(() => {
+      sinon.restore();
+    });
+
+    describe('_getPackageName', function () {
+      it('should return the package name', function () {
+        const pkg = status._getPackageName(fixtures.singleQueued);
+        assume(pkg).equals('whatever');
+      });
+    });
+
+    describe('_shouldSendWebhook', function () {
+      it('should check if a package has registered endpoints', function () {
+        assume(status._shouldSendWebhook('whatever')).equals(true);
+        assume(status._shouldSendWebhook('whatever2')).equals(false);
+      });
+    });
+
+    describe('_isBuildQueued', function () {
+      it('should detect the build is queued', async function () {
+        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
+          .resolves([fixtures.secondEvent, fixtures.singleQueued, fixtures.singleFetchedTarball]);
+        const { name: pkg, version, env } = fixtures.singleFetchedTarball;
+        const result = await status._isBuildQueued(fixtures.singleFetchedTarball);
+        assume(findAllStub).is.calledWith({ pkg, version, env });
+        assume(result).equals(true);
+      });
+
+      it('should detect the build is not queued', async function () {
+        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
+          .resolves([fixtures.secondEvent, fixtures.singleFetchedTarball]);
+        const { name: pkg, version, env } = fixtures.singleFetchedTarball;
+        const result = await status._isBuildQueued(fixtures.singleFetchedTarball);
+        assume(findAllStub).is.calledWith({ pkg, version, env });
+        assume(result).equals(false);
+      });
+    });
+
+    describe('_dispatchWebhook', function () {
+      it('should dispatch build_started webhook', async function () {
+        const shouldSendStub = sinon.stub(status, '_shouldSendWebhook').resolves(true);
+        const isBuildStub = sinon.stub(status, '_isBuildQueued').resolves(true);
+        const sendStub = sinon.stub(status, '_sendWebhook').resolves();
+        await status._dispatchWebhook('build_started', fixtures.singleEvent);
+        const { name: pkg, version, env } = fixtures.singleEvent;
+        assume(shouldSendStub).is.calledWith(pkg);
+        assume(isBuildStub).is.calledWith(fixtures.singleEvent);
+        assume(sendStub).is.calledWith({ pkg, version, env, event: 'build_started' });
       });
     });
 
@@ -78,7 +137,6 @@ describe('Status-Handler', function () {
         assume(headfindstub).is.called(1);
         assume(statcreatestub).is.called(1);
         assume(headcreatestub).is.called(1);
-        sinon.restore();
       });
 
       it('should not create status when there is already a current Status record', async function () {
@@ -95,7 +153,6 @@ describe('Status-Handler', function () {
         assume(headfindstub).is.called(1);
         assume(statcreatestub).is.not.called();
         assume(headcreatestub).is.not.called();
-        sinon.restore();
       });
 
       it('should error when any database call errors', async function () {
@@ -104,7 +161,6 @@ describe('Status-Handler', function () {
         sinon.stub(status.models.StatusHead, 'findOne').resolves();
 
         await assume(status.event(fixtures.singleEvent)).throwsAsync();
-        sinon.restore();
       });
     });
 
@@ -117,7 +173,6 @@ describe('Status-Handler', function () {
         await status.queued(fixtures.singleQueued);
         assume(statupdatestub).is.called(1);
         assume(headupdatestub).is.called(1);
-        sinon.restore();
       });
 
       it('should throw an error if status fails to update', async function () {
@@ -125,7 +180,6 @@ describe('Status-Handler', function () {
         sinon.stub(status.models.StatusHead, 'update').resolves();
 
         await assume(status.queued(fixtures.singleQueued)).throwsAsync();
-        sinon.restore();
       });
     });
 
@@ -137,7 +191,6 @@ describe('Status-Handler', function () {
         await status.error(fixtures.singleError);
         assume(statusupdatestub).is.called(1);
         assume(eventstub).is.called();
-        sinon.restore();
       });
 
       it('should error when a database call errors', async function () {
@@ -145,7 +198,6 @@ describe('Status-Handler', function () {
         sinon.stub(status, 'event').rejects();
 
         await assume(status.error(fixtures.singleError)).throwsAsync();
-        sinon.restore();
       });
     });
 
@@ -163,14 +215,12 @@ describe('Status-Handler', function () {
         assume(statusfindstub).is.called(1);
         assume(statusupdatestub).is.called(1);
         assume(statuseventcreatestub).is.called(1);
-        sinon.restore();
       });
 
       it('should error if a database call errors', async function () {
         sinon.stub(status.models.StatusCounter, 'increment').rejects();
 
         await assume(status.complete(fixtures.singleComplete)).throwsAsync();
-        sinon.restore();
       });
     });
 
@@ -180,7 +230,6 @@ describe('Status-Handler', function () {
 
         await status.ignored(fixtures.singleEvent);
         assume(info).is.called(1);
-        sinon.restore();
       });
     });
   });
@@ -195,6 +244,14 @@ describe('Status-Handler', function () {
       dynamodb.dynamoDriver(dynamoDriver);
       handler = new StatusHandler({
         models: models(dynamodb),
+        webhooks: {
+          endpoints: {
+            whatever: [
+              'https://example.com/webhooks',
+              'https://fleetcommand.godaddy.com/v1/warehouse'
+            ]
+          }
+        },
         conc: 1
       });
       await liveness.waitForServices({
@@ -221,6 +278,8 @@ describe('Status-Handler', function () {
 
     after(async function () {
       await handler.models.drop();
+      nock.cleanAll();
+      nock.restore();
     });
 
     it('should successfully handle multiple event messages and put them in the database', async function () {
@@ -255,6 +314,45 @@ describe('Status-Handler', function () {
       const status = await Status.findOne(spec);
       assume(status.complete).equals(true);
       assume(status.error).equals(false);
+    });
+
+    it('should send build_started webhook and be robust', async function () {
+      const webhooksNock = nock('https://example.com')
+        .post('/webhooks')
+        .reply(204);
+      const notificationsNock = nock('https://fleetcommand.godaddy.com')
+        .post('/v1/warehouse')
+        .socketDelay(8000) // Idle connection to simulate a socket timeout
+        .reply(504);
+
+      const { Status, StatusHead, StatusEvent } = handler.models;
+      const spec = handler._transform(fixtures.singleQueued, 'counter');
+      await handler.event(fixtures.singleEvent);
+      await handler.queued(fixtures.singleQueued);
+
+      // Add a waiter proxy to ensure _sendWebhook completed
+      // since _dispatchWebhook is not blocking the handler.event function
+      const sendWebhook = handler._sendWebhook.bind(handler);
+      const waiter = new Promise(resolve => {
+        handler._sendWebhook = async function (body) {
+          await sendWebhook(body);
+          resolve();
+        };
+      });
+
+      await handler.event(fixtures.singleFetchedTarball);
+      await waiter;
+
+      assume(webhooksNock.isDone()).equals(true);
+      assume(notificationsNock.isDone()).equals(true);
+
+      // Restore _sendWebhook
+      handler._sendWebhook = sendWebhook;
+      await Promise.all([
+        Status.remove(spec),
+        StatusHead.remove(spec),
+        StatusEvent.remove(spec)
+      ]);
     });
 
     it('should handle setting previous version when we have one as StatusHead', async function () {

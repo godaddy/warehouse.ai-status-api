@@ -1,6 +1,10 @@
 # CHANGELOG
 
+###
+
 - BREAKING--Convert datastar models to dynastar models
+- Add build_started webhook type
+- Add webhooks support
 
 ### 1.1.3
 
