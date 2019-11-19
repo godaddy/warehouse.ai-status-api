@@ -72,7 +72,8 @@ describe('Status-Handler', function () {
         assume(result).equals(true);
       });
 
-      it('should not detect the build completed more than twice', async function () {
+      it('should not detect the build completed more than once', async function () {
+        // WE DO NOT WANT TO SEND HOOKS MULTIPLE TIMES
         const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
           .resolves([
             fixtures.whateverEnUSTarball,
