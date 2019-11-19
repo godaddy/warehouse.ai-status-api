@@ -14,7 +14,7 @@ const statusModels = require('warehouse.ai-status-models');
 module.exports = function modelboot(app, options, callback) {
   const ensure = app.config.get('ensure') || options.ensure;
 
-  const dynamoDriver = new AWS.DynamoDB(app.config.get('dynamodb'));
+  const dynamoDriver = new AWS.DynamoDB(app.config.get('database'));
   dynamodb.dynamoDriver(dynamoDriver);
   app.models = statusModels(dynamodb);
   const liveness = new AwsLiveness();

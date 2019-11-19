@@ -7,8 +7,7 @@
   "wrhs": {
     "uri": "https://my.warehouse.endpoint.com"
   },
-  "dynamodb": {
-    "apiVersion": "2012-08-10",
+  "database": {
     "endpoint": "http://localhost:4569",
     "region": "us-west-1"
   },

@@ -240,7 +240,7 @@ describe('Status-Handler', function () {
     let spec;
 
     before(async function () {
-      const dynamoDriver = new AWS.DynamoDB(config.dynamodb);
+      const dynamoDriver = new AWS.DynamoDB(config.database);
       dynamodb.dynamoDriver(dynamoDriver);
       handler = new StatusHandler({
         models: models(dynamodb),

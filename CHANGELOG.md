@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### 2.0.1
+
+- Use `database` as property for config, similar to other warehouse services.
+
 ### 2.0.0
 
 - BREAKING--Convert datastar models to dynastar models
