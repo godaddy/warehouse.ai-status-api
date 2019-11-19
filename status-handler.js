@@ -203,7 +203,7 @@ class StatusHandler {
     const locales = await new Promise((resolve, reject) => {
       this.wrhs.packages.get({ pkg, version, env }, (err, result) => {
         if (err) return reject(err);
-        resolve(result.locales)
+        resolve(result.extended.locales || []);
       });
     });
 

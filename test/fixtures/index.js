@@ -36,6 +36,46 @@ exports.singleComplete = {
   name: 'whatever'
 };
 
+exports.whateverEnUSTarball = {
+  eventType: 'event',
+  locale: 'en-US',
+  message: 'Fetched tarball',
+  details: null,
+  version: '1.0.0',
+  env: 'dev',
+  name: 'whatever'
+};
+
+exports.whateverEnUSCompleted = {
+  eventType: 'complete',
+  locale: 'en-US',
+  message: 'carpenterd-worker build completed',
+  details: null,
+  version: '1.0.0',
+  env: 'dev',
+  name: 'whatever'
+};
+
+exports.whateverEnGBTarball = {
+  eventType: 'event',
+  locale: 'en-GB',
+  message: 'Fetched tarball',
+  details: null,
+  version: '1.0.0',
+  env: 'dev',
+  name: 'whatever'
+};
+
+exports.whateverEnGBCompleted = {
+  eventType: 'complete',
+  locale: 'en-GB',
+  message: 'carpenterd-worker build completed',
+  details: null,
+  version: '1.0.0',
+  env: 'dev',
+  name: 'whatever'
+};
+
 exports.singleCompleteStatus = {
   version: '1.0.0',
   env: 'dev',
