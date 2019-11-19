@@ -201,7 +201,7 @@ class StatusHandler {
     if (!previousEvents || previousEvents.length === 0) return false;
 
     const locales = await new Promise((resolve, reject) => {
-      wrhs.packages.get({ pkg, version, env }, (err, result) => {
+      this.wrhs.packages.get({ pkg, version, env }, (err, result) => {
         if (err) return reject(err);
         resolve(result.locales)
       });
