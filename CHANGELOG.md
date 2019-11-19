@@ -1,5 +1,7 @@
 # CHANGELOG
 
+### 2.0.2
+
 - `request-promise-native` should be a regular dep
 
 ### 2.0.1
