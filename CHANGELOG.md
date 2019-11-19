@@ -1,5 +1,7 @@
 # CHANGELOG
 
+- `request-promise-native` should be a regular dep
+
 ### 2.0.1
 
 - Use `database` as property for config, similar to other warehouse services.
