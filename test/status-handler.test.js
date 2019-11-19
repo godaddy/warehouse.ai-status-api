@@ -306,7 +306,17 @@ describe('Status-Handler', function () {
           }
         },
         conc: 1,
-        wrhs: { packages: { get() { return ['en', 'fr', 'pt']; } }}
+        wrhs: {
+          packages: {
+            get(_, cb) {
+              cb({
+                extended: {
+                  locales: ['en-US', 'fr-FR', 'pt-PT']
+                }
+              });
+            }
+          }
+        }
       });
       await liveness.waitForServices({
         clients: [dynamoDriver],
