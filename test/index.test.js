@@ -1,6 +1,8 @@
-const index = require('..');
 const assume = require('assume');
 const request = require('request-promise-native');
+const thenify = require('tinythen');
+
+const index = require('..');
 const { address } = require('./util');
 
 describe('index', function () {
@@ -14,9 +16,11 @@ describe('index', function () {
     });
   });
 
-  after(function (done) {
-    if (app) return app.close(done);
-    done();
+  after(async function () {
+    if (!app) return;
+
+    await app.models.drop();
+    await thenify(app, 'close');
   });
 
   it('should correctly listen on a port', function () {

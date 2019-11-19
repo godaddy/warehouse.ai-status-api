@@ -7,17 +7,10 @@
   "wrhs": {
     "uri": "https://my.warehouse.endpoint.com"
   },
-  "datastar": {
-    "config": {
-      "user": "cassandra",
-      "password": "cassandra",
-      "keyspace": "warehouseai_status_api",
-      "hosts": ["127.0.0.1"],
-      "keyspaceOptions": {
-        "class": "SimpleStrategy",
-        "replication_factor": 1
-      }
-    }
+  "dynamodb": {
+    "apiVersion": "2012-08-10",
+    "endpoint": "http://localhost:4569",
+    "region": "us-west-1"
   },
   "webhooks": {
     "concurrency": 5,

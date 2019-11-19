@@ -4,19 +4,8 @@ const thenify = require('tinythen');
 const request = require('request-promise-native');
 const StatusHandler = require('../status-handler');
 const fixtures = require('./fixtures');
-const { address } = require('./util');
+const { address, cleanupTables } = require('./util');
 const rip = require('rip-out');
-
-
-async function cleanupTables(app, spec) {
-  const { Status, StatusHead, StatusEvent } = app.models;
-
-  return Promise.all([
-    Status.remove(spec),
-    StatusHead.remove(spec),
-    StatusEvent.remove(spec)
-  ]);
-}
 
 function assumeEvent(event) {
   assume(event.message).exists();
@@ -75,8 +64,7 @@ describe('routes', function () {
       it('/status should return status object when requested', async function () {
         const statusObj = await request(address(app, '/status', spec));
         assume(statusObj.complete).is.falsey();
-        assume(statusObj.createDate).exists();
-        assume(statusObj.updateDate).exists();
+        assume(statusObj.createdAt).exists();
         assume(statusObj.error).is.falsey();
         assume(statusObj.total).is.falsey();
       });
@@ -104,7 +92,7 @@ describe('routes', function () {
 
       afterEach(async () => {
         if (!app) return;
-        await cleanupTables(app, spec);
+        await cleanupTables(app.models, spec);
       });
     });
 
@@ -118,8 +106,8 @@ describe('routes', function () {
       it('/status should return status object when requested', async function () {
         const statusObj = await request(address(app, '/status', spec));
         assume(statusObj.complete).is.falsey();
-        assume(statusObj.createDate).exists();
-        assume(statusObj.updateDate).exists();
+        assume(statusObj.createdAt).exists();
+        assume(statusObj.updatedAt).exists();
         assume(statusObj.error).is.falsey();
         assume(statusObj.total).is.equal(1);
       });
@@ -148,7 +136,7 @@ describe('routes', function () {
 
       afterEach(async () => {
         if (!app) return;
-        await cleanupTables(app, spec);
+        await cleanupTables(app.models, spec);
       });
     });
 
@@ -163,8 +151,8 @@ describe('routes', function () {
       it('/status should return status object when requested', async function () {
         const statusObj = await request(address(app, '/status', spec));
         assume(statusObj.complete).equals(true);
-        assume(statusObj.createDate).exists();
-        assume(statusObj.updateDate).exists();
+        assume(statusObj.createdAt).exists();
+        assume(statusObj.updatedAt).exists();
         assume(statusObj.error).is.falsey();
         assume(statusObj.total).is.equal(1);
       });
@@ -194,9 +182,7 @@ describe('routes', function () {
 
       afterEach(async () => {
         if (!app) return;
-        const { StatusCounter } = app.models;
-        await StatusCounter.decrement(spec, 1);
-        await cleanupTables(app, spec);
+        await cleanupTables(app.models, spec);
       });
     });
 

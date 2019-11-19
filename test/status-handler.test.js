@@ -1,26 +1,30 @@
+const AWS = require('aws-sdk');
+const AwsLiveness = require('aws-liveness');
 const { Writable } = require('stream');
 const assume = require('assume');
+const dynamodb = require('dynamodb-x');
 const models = require('warehouse.ai-status-models');
-const { mocks, helpers } = require('datastar-test-tools');
 const sinon = require('sinon');
-const thenify = require('tinythen');
-const Datastar = require('datastar');
-const StatusHandler = require('../status-handler');
-const fixtures = require('./fixtures');
-const cassConfig = require('./cassandra.json');
 const through = require('through2');
 const nock = require('nock');
 
+const StatusHandler = require('../status-handler');
+const fixtures = require('./fixtures');
+const config = require('../config/development.json');
+const { cleanupTables } = require('./util');
+
 assume.use(require('assume-sinon'));
+
+const liveness = new AwsLiveness();
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
 describe('Status-Handler', function () {
   describe('unit', function () {
     let status;
 
     before(() => {
-      const data = helpers.connectDatastar({ mock: true }, mocks.datastar());
       status = new StatusHandler({
-        models: models(data),
+        models: models(dynamodb),
         webhooks: {
           endpoints: {
             whatever: [
@@ -232,13 +236,14 @@ describe('Status-Handler', function () {
 
   describe('integration', function () {
     this.timeout(6E4);
-    let datastar;
     let handler;
+    let spec;
 
     before(async function () {
-      datastar = new Datastar(cassConfig);
+      const dynamoDriver = new AWS.DynamoDB(config.dynamodb);
+      dynamodb.dynamoDriver(dynamoDriver);
       handler = new StatusHandler({
-        models: models(datastar),
+        models: models(dynamodb),
         webhooks: {
           endpoints: {
             whatever: [
@@ -249,20 +254,38 @@ describe('Status-Handler', function () {
         },
         conc: 1
       });
-      await thenify(datastar, 'connect');
+      await liveness.waitForServices({
+        clients: [dynamoDriver],
+        waitSeconds: 60
+      });
       await handler.models.ensure();
+      const cleanupSpec = handler._transform(fixtures.singleEvent, 'counter');
+
+      // I know this is bad code smell, but when this suite is run after routes.test.js,
+      // localstack fails to delete the existing rows before dropping the table,
+      // and then queues up an insert to add these rows back to the new table
+      // somewhere in the first second of its launch. Rather than force the
+      // test order of execution, I have decided to be defensive against this
+      // behavior by waiting a second and then cleaning up the tables.
+      await wait(1000);
+      await cleanupTables(handler.models, cleanupSpec);
+    });
+
+    afterEach(async function () {
+      if (!handler) return;
+      await cleanupTables(handler.models, spec);
     });
 
     after(async function () {
       await handler.models.drop();
-      await thenify(datastar, 'close');
       nock.cleanAll();
       nock.restore();
     });
 
     it('should successfully handle multiple event messages and put them in the database', async function () {
       const { Status, StatusHead, StatusEvent } = handler.models;
-      const spec = handler._transform(fixtures.singleEvent, 'counter');
+      spec = handler._transform(fixtures.singleEvent, 'counter');
+
       await handler.event(fixtures.singleEvent);
       await handler.event(fixtures.secondEvent);
 
@@ -279,16 +302,11 @@ describe('Status-Handler', function () {
       const [first, second] = events;
       assume(first.message).equals(fixtures.singleEvent.message);
       assume(second.message).equals(fixtures.secondEvent.message);
-      await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusEvent.remove(spec)
-      ]);
     });
 
     it('should handle initial event, queued and complete event for 1 build', async function () {
-      const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
-      const spec = handler._transform(fixtures.singleQueued, 'counter');
+      const { Status } = handler.models;
+      spec = handler._transform(fixtures.singleQueued, 'counter');
       await handler.event(fixtures.singleEvent);
       await handler.queued(fixtures.singleQueued);
       await handler.complete(fixtures.singleComplete);
@@ -296,12 +314,6 @@ describe('Status-Handler', function () {
       const status = await Status.findOne(spec);
       assume(status.complete).equals(true);
       assume(status.error).equals(false);
-      await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusEvent.remove(spec),
-        StatusCounter.decrement(spec, 1)
-      ]);
     });
 
     it('should send build_started webhook and be robust', async function () {
@@ -345,7 +357,7 @@ describe('Status-Handler', function () {
 
     it('should handle setting previous version when we have one as StatusHead', async function () {
       const { StatusHead, Status, StatusEvent } = handler.models;
-      const spec = handler._transform(fixtures.singleEvent);
+      spec = handler._transform(fixtures.singleEvent);
 
       await StatusHead.create(fixtures.previousStatusHead);
       await handler.event(fixtures.singleEvent);
@@ -353,16 +365,11 @@ describe('Status-Handler', function () {
       assume(status.previousVersion).equals(fixtures.previousStatusHead.version);
       const events = await StatusEvent.findAll(spec);
       assume(events).is.length(1);
-      await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusEvent.remove(spec)
-      ]);
     });
 
     it('should handle error case', async function () {
-      const { StatusHead, Status, StatusEvent } = handler.models;
-      const spec = handler._transform(fixtures.singleEvent);
+      const { Status, StatusEvent } = handler.models;
+      spec = handler._transform(fixtures.singleEvent);
 
       await handler.event(fixtures.singleEvent);
       await handler.error(fixtures.singleError);
@@ -371,17 +378,11 @@ describe('Status-Handler', function () {
       assume(status.error).equals(true);
       const events = await StatusEvent.findAll(spec);
       assume(events).is.length(2);
-
-      await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusEvent.remove(spec)
-      ]);
     });
 
     it('should handle a series of events via stream', function (done) {
-      const { Status, StatusHead, StatusEvent, StatusCounter } = handler.models;
-      const spec = handler._transform(fixtures.singleEvent);
+      const { Status } = handler.models;
+      spec = handler._transform(fixtures.singleEvent);
       const source = through.obj();
 
       source
@@ -393,12 +394,6 @@ describe('Status-Handler', function () {
         .on('finish', async () => {
           const status = await Status.findOne(spec);
           assume(status.complete).equals(true);
-          await Promise.all([
-            Status.remove(spec),
-            StatusHead.remove(spec),
-            StatusEvent.remove(spec),
-            StatusCounter.decrement(spec, 1)
-          ]);
           done();
         });
 

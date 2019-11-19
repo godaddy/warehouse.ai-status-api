@@ -13,3 +13,16 @@ exports.address = function address(app, pathname, spec = {}) {
     json: true
   };
 };
+
+exports.cleanupTables = async function (models, spec) {
+  const { Status, StatusHead, StatusEvent, StatusCounter } = models;
+  const events = await StatusEvent.findAll(spec);
+
+  return Promise.all([
+    Status.remove(spec),
+    StatusCounter.remove(spec),
+    StatusHead.remove(spec)
+  ].concat(events.map(event =>
+    StatusEvent.remove({ ...spec, eventId: event.eventId })
+  )));
+};

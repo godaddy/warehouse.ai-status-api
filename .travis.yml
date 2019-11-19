@@ -1,14 +1,16 @@
 sudo: required
-dist: trusty
 language: node_js
 node_js:
-  - "8"
   - "10"
+  - "12"
+before_install:
+- docker pull localstack/localstack
+- docker run -d --name localstack -p 4569:4569 --rm localstack/localstack:0.10.5
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 services:
-  - cassandra
+  - docker
 matrix:
   fast_finish: true
   allow_failures:
-  - node_js: "10"
+  - node_js: "12"

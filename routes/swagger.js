@@ -54,9 +54,9 @@ module.exports = function (app) {
  *         type: number
  *       error:
  *         type: string
- *       createDate:
+ *       createdAt:
  *         type: string
- *       updateDate:
+ *       updatedAt:
  *         type: string
  *       complete:
  *         type: boolean
@@ -78,7 +78,7 @@ module.exports = function (app) {
  *         type: string
  *       details:
  *         type: string
- *       createDate:
+ *       createdAt:
  *         type: string
  *       eventId:
  *         type: string
@@ -97,4 +97,3 @@ module.exports = function (app) {
  */
 
 };
-
