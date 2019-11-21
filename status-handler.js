@@ -137,6 +137,14 @@ class StatusHandler {
     //
     const spec = this._transform(data, 'counter');
     const event = this._transform(data, 'event');
+
+    // Dispatch hook first to resolve the problem of possibly sending
+    // hooks more than once due to duplicate messages and eventual consistency
+    await this._dispatchWebhook(BUILD_COMPLETED, data)
+      .catch(err => {
+        this.log.error('Dispatch webhook errored %s', err.message, data);
+      });
+
     await Promise.all([
       StatusCounter.increment(spec),
       StatusEvent.create(event)
@@ -144,11 +152,6 @@ class StatusHandler {
     const complete = await this.isComplete(spec);
 
     if (!complete) return;
-
-    this._dispatchWebhook(BUILD_COMPLETED, data)
-      .catch(err => {
-        this.log.error('Dispatch webhook errored %s', err.message, data);
-      });
 
     // Overwrite error: true if it was set to error before, since the errored build
     // must have resolved if we get here
