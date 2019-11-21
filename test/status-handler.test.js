@@ -61,7 +61,8 @@ describe('Status-Handler', function () {
           .resolves([
             fixtures.whateverEnUSTarball,
             fixtures.whateverEnUSCompleted,
-            fixtures.whateverEnGBTarball
+            fixtures.whateverEnGBTarball,
+            fixtures.whateverEnGBCompleted
           ]);
         const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
           .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] }});
@@ -79,6 +80,7 @@ describe('Status-Handler', function () {
             fixtures.whateverEnUSTarball,
             fixtures.whateverEnUSCompleted,
             fixtures.whateverEnGBTarball,
+            fixtures.whateverEnGBCompleted,
             fixtures.whateverEnGBCompleted
           ]);
         const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')

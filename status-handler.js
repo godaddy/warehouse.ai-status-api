@@ -137,14 +137,6 @@ class StatusHandler {
     //
     const spec = this._transform(data, 'counter');
     const event = this._transform(data, 'event');
-
-    // Dispatch hook first to resolve the problem of possibly sending
-    // hooks more than once due to duplicate messages and eventual consistency
-    await this._dispatchWebhook(BUILD_COMPLETED, data)
-      .catch(err => {
-        this.log.error('Dispatch webhook errored %s', err.message, data);
-      });
-
     await Promise.all([
       StatusCounter.increment(spec),
       StatusEvent.create(event)
@@ -152,6 +144,11 @@ class StatusHandler {
     const complete = await this.isComplete(spec);
 
     if (!complete) return;
+
+    this._dispatchWebhook(BUILD_COMPLETED, data)
+      .catch(err => {
+        this.log.error('Dispatch webhook errored %s', err.message, data);
+      });
 
     // Overwrite error: true if it was set to error before, since the errored build
     // must have resolved if we get here
@@ -196,19 +193,17 @@ class StatusHandler {
     const { version, env, locale } = data;
     const pkg = this._getPackageName(data);
 
-    const previousEvents = await this.models.StatusEvent.findAll({
-      pkg, version, env
-    });
-
-    // NOTE(jdaeli): this should never occur - TO CONFIRM
-    if (!previousEvents || previousEvents.length === 0) return false;
-
-    const locales = await new Promise((resolve, reject) => {
-      this.wrhs.packages.get({ pkg, version, env }, (err, result) => {
-        if (err) return reject(err);
-        resolve(result.extended.locales || []);
-      });
-    });
+    const [previousEvents, locales] = await Promise.all([
+      this.models.StatusEvent.findAll({
+        pkg, version, env
+      }),
+      new Promise((resolve, reject) => {
+        this.wrhs.packages.get({ pkg, version, env }, (err, result) => {
+          if (err) return reject(err);
+          resolve(result.extended.locales || []);
+        });
+      })
+    ]);
 
     const completedLocales = previousEvents
       .filter(event => event.message === 'carpenterd-worker build completed')
@@ -216,13 +211,10 @@ class StatusHandler {
 
     const numOfCompletedLocales = (Array.from(new Set(completedLocales))).length;
 
-    // CASE 1: no previous locales completed, and only 1 package locale to build
-    if (numOfCompletedLocales === 0 && locales.length < 2) return true;
-
-    // CASE 2: all locales completed except the current one
+    // All locales completed and no duplicates
     if (
-      numOfCompletedLocales === locales.length - 1 &&
-      !completedLocales.includes(locale)
+      numOfCompletedLocales === locales.length &&
+      completedLocales.reduce((acc, lc) => acc + (lc === locale), 0) === 1
     ) {
       return true;
     }
