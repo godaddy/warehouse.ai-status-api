@@ -1,5 +1,7 @@
 # CHANGELOG
 
+- Fix Travis CI
+
 ### 2.0.2
 
 - `request-promise-native` should be a regular dep
