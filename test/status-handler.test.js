@@ -272,7 +272,7 @@ describe('Status-Handler', function () {
       // somewhere in the first second of its launch. Rather than force the
       // test order of execution, I have decided to be defensive against this
       // behavior by waiting a second and then cleaning up the tables.
-      await wait(5000);
+      await wait(1000);
       await cleanupTables(handler.models, cleanupSpec);
     });
 
