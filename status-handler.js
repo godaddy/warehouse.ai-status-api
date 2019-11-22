@@ -214,7 +214,7 @@ class StatusHandler {
     // All locales completed and no duplicates
     if (
       numOfCompletedLocales === locales.length &&
-      completedLocales.reduce((acc, lc) => acc + (lc === locale), 0) === 1
+      completedLocales.filter(lc => lc === locale).length === 1
     ) {
       return true;
     }
