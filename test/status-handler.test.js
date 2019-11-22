@@ -256,9 +256,9 @@ describe('Status-Handler', function () {
       });
       await liveness.waitForServices({
         clients: [dynamoDriver],
-        waitSeconds: 120
+        waitSeconds: 60
       });
-      await handler.models.ensure();
+      // await handler.models.ensure();
       const cleanupSpec = handler._transform(fixtures.singleEvent, 'counter');
 
       // I know this is bad code smell, but when this suite is run after routes.test.js,
