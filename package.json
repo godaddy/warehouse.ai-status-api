@@ -55,15 +55,15 @@
   "devDependencies": {
     "assume": "^2.2.0",
     "assume-sinon": "^1.0.1",
-    "eslint": "^4.19.1",
-    "eslint-config-godaddy": "^2.1.0",
+    "eslint": "^6.7.0",
+    "eslint-config-godaddy": "^4.0.0",
     "eslint-plugin-json": "^1.2.0",
-    "eslint-plugin-mocha": "^5.0.0",
+    "eslint-plugin-mocha": "^6.2.2",
     "json-refs": "^3.0.12",
-    "mocha": "^5.2.0",
+    "mocha": "^6.2.2",
     "nock": "^11.7.0",
-    "nyc": "^12.0.2",
+    "nyc": "^14.1.1",
     "request": "^2.87.0",
-    "sinon": "^6.0.1"
+    "sinon": "^7.5.0"
   }
 }
