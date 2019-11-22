@@ -258,7 +258,7 @@ describe('Status-Handler', function () {
         clients: [dynamoDriver],
         waitSeconds: 60
       });
-      // await handler.models.ensure();
+      await handler.models.ensure();
       const cleanupSpec = handler._transform(fixtures.singleEvent, 'counter');
 
       // I know this is bad code smell, but when this suite is run after routes.test.js,
@@ -267,7 +267,7 @@ describe('Status-Handler', function () {
       // somewhere in the first second of its launch. Rather than force the
       // test order of execution, I have decided to be defensive against this
       // behavior by waiting a second and then cleaning up the tables.
-      await wait(1000);
+      await wait(5000);
       await cleanupTables(handler.models, cleanupSpec);
     });
 
