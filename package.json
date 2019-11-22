@@ -8,7 +8,7 @@
   },
   "scripts": {
     "pretest": "npm run swagger",
-    "test": "nyc --reporter=lcov --reporter=text mocha --require test/setup test/*.test.js --timeout 10000",
+    "test": "nyc --reporter=lcov --reporter=text mocha test/*.test.js --timeout 10000",
     "lint": "eslint-godaddy *.js \"{preboots,routes,test}/**/*.js\"",
     "localstack": "docker run -it -p 4569:4569 -e SERVICES=dynamodb --rm localstack/localstack",
     "prepublishOnly": "npm run swagger",

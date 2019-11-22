@@ -23,8 +23,6 @@ describe('Status-Handler', function () {
     let status;
 
     before(() => {
-      const dynamoDriver = new AWS.DynamoDB(config.database);
-      dynamodb.dynamoDriver(dynamoDriver);
       status = new StatusHandler({
         models: models(dynamodb),
         webhooks: {
@@ -331,7 +329,7 @@ describe('Status-Handler', function () {
         .reply(504);
 
       const { Status, StatusHead, StatusEvent } = handler.models;
-      const spec = handler._transform(fixtures.singleQueued, 'counter');
+      const someSpec = handler._transform(fixtures.singleQueued, 'counter');
       await handler.event(fixtures.singleEvent);
       await handler.queued(fixtures.singleQueued);
 
@@ -354,9 +352,9 @@ describe('Status-Handler', function () {
       // Restore _sendWebhook
       handler._sendWebhook = sendWebhook;
       await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusEvent.remove(spec)
+        Status.remove(someSpec),
+        StatusHead.remove(someSpec),
+        StatusEvent.remove(someSpec)
       ]);
     });
 

@@ -10,7 +10,7 @@ module.exports = function (app) {
 
   // Global swagger defs:
 
-/**
+  /**
  * @swagger
  *
  * components:
