@@ -6,14 +6,13 @@ node_js:
 before_install:
   - docker pull localstack/localstack
   - docker run -d --name localstack -e SERVICES=dynamodb -p 4569:4569 --rm localstack/localstack:0.10.5
-install:
-  - rm package-lock.json
-  - npm install
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 services:
   - docker
 matrix:
   fast_finish: true
+  allow_failures:
+  - node_js: "12"
 env:
   - AWS_ACCESS_KEY_ID=foobar AWS_SECRET_ACCESS_KEY=foobar
