@@ -256,7 +256,7 @@ describe('Status-Handler', function () {
       });
       await liveness.waitForServices({
         clients: [dynamoDriver],
-        waitSeconds: 60
+        waitSeconds: 120
       });
       await handler.models.ensure();
       const cleanupSpec = handler._transform(fixtures.singleEvent, 'counter');
