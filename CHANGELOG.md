@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### 2.1.1
+
+- Add repo information to web hooks
+
 ### 2.1.0
 
 - Add build_completed webhook type

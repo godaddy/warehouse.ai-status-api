@@ -16,8 +16,6 @@ const DEFAULT_WEBHOOKS_CONCURRENCY = 5;
 const DEFAULT_WEBHOOKS_TIMEOUT = 2000;
 const BUILD_COMPLETED = 'build_completed';
 const BUILD_STARTED = 'build_started';
-const MSG_BUILD_QUEUED = 'Builds Queued';
-const MSG_FETCHED_TARBALL = 'Fetched tarball';
 
 /**
  * StatusHandler class for receiving messages from NSQ and taking the right
@@ -70,11 +68,6 @@ class StatusHandler {
       Status.findOne(ev)
     ]);
 
-    this._dispatchWebhook(BUILD_STARTED, data)
-      .catch(err => {
-        this.log.error('Dispatch webhook errored %s', err.message, data);
-      });
-
     if (!current) {
       return this._status('create', {
         ...this._transform(data, 'status'),
@@ -94,6 +87,11 @@ class StatusHandler {
     // Its safe to update status here because status is created by the first
     // `event` for npm install so that we can fetch the head and handle setting
     // the previous version from the prior HEAD
+    this._dispatchWebhook(BUILD_STARTED, data)
+      .catch(err => {
+        this.log.error('Dispatch webhook errored %s', err.message, data);
+      });
+
     return Promise.all([
       this._status('update', this._transform(data, 'status')),
       this.event(data)
@@ -183,92 +181,6 @@ class StatusHandler {
   }
 
   /**
-   * Check if a build is completed for all locales
-   *
-   * @function _isBuildCompleted
-   * @param {Object} data - Message from NSQ
-   * @returns {String} the package name
-   */
-  async _isBuildCompleted(data) {
-    const { version, env, locale } = data;
-    const pkg = this._getPackageName(data);
-
-    const [previousEvents, locales] = await Promise.all([
-      this.models.StatusEvent.findAll({
-        pkg, version, env
-      }),
-      new Promise((resolve, reject) => {
-        this.wrhs.packages.get({ pkg, version, env }, (err, result) => {
-          if (err) return reject(err);
-          resolve(result.extended.locales || []);
-        });
-      })
-    ]);
-
-    const completedLocales = previousEvents
-      .filter(event => event.message === 'carpenterd-worker build completed')
-      .map(event => event.locale);
-
-    const numOfCompletedLocales = (Array.from(new Set(completedLocales))).length;
-
-    // All locales completed and no duplicates
-    if (
-      numOfCompletedLocales === locales.length &&
-      completedLocales.filter(lc => lc === locale).length === 1
-    ) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Check if a build is in a queued status
-   *
-   * @function _isBuildQueued
-   * @param {Object} data - Message from NSQ
-   * @returns {String} the package name
-   */
-  async _isBuildQueued(data) {
-    const { version, env } = data;
-    const pkg = this._getPackageName(data);
-
-    // Fetch list of previous events for a certain build
-    const previousEvents = await this.models.StatusEvent.findAll({
-      pkg, version, env
-    });
-
-    const nEvents = previousEvents.length;
-
-    if (nEvents === 0) return false;
-
-    const lastEvent = previousEvents[nEvents - 1];
-
-    // Ensure that second last event is 'Builds Queued' from carpenterd
-    // and that current event is 'Fetched tarball' from carpenterd-worker
-    if (
-      lastEvent.message === MSG_FETCHED_TARBALL &&
-      lastEvent.locale === data.locale &&
-      data.message === MSG_FETCHED_TARBALL &&
-      previousEvents[nEvents - 2].message === MSG_BUILD_QUEUED &&
-      nEvents > 1
-    ) {
-      return true;
-    }
-
-    // Same as before but handle if StatusEvent.findAll does not return
-    // current event written in the database yet because of eventual consistency
-    if (
-      lastEvent.message === MSG_BUILD_QUEUED &&
-      data.message === MSG_FETCHED_TARBALL
-    ) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
    * Get package name from NSQ message
    *
    * @function _getPackageName
@@ -297,16 +209,21 @@ class StatusHandler {
 
     switch (event) {
       case BUILD_COMPLETED:
-        if (!await this._isBuildCompleted(data)) return;
-        body = { event, pkg, version, env };
-        break;
       case BUILD_STARTED:
-        if (!await this._isBuildQueued(data)) return;
         body = { event, pkg, version, env };
         break;
       default:
         throw new Error(`'${event}' is not a valid webhook type`);
     }
+
+    const repository = await new Promise((resolve, reject) => {
+      this.wrhs.packages.get({ pkg }, (err, result) => {
+        if (err) return reject(err);
+        resolve(result.extended.repository || {});
+      });
+    });
+
+    body.repository = repository;
 
     // Send webhook to subscribed third-parties
     return this._sendWebhook(body);
