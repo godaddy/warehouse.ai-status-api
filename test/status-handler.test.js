@@ -328,8 +328,6 @@ describe('Status-Handler', function () {
         .socketDelay(8000) // Idle connection to simulate a socket timeout
         .reply(504);
 
-      const { Status, StatusHead, StatusEvent } = handler.models;
-      const someSpec = handler._transform(fixtures.singleQueued, 'counter');
       await handler.event(fixtures.singleEvent);
       await handler.queued(fixtures.singleQueued);
 
@@ -350,12 +348,8 @@ describe('Status-Handler', function () {
       assume(notificationsNock.isDone()).equals(true);
 
       // Restore _sendWebhook
+      // eslint-disable-next-line require-atomic-updates
       handler._sendWebhook = sendWebhook;
-      await Promise.all([
-        Status.remove(someSpec),
-        StatusHead.remove(someSpec),
-        StatusEvent.remove(someSpec)
-      ]);
     });
 
     it('should handle setting previous version when we have one as StatusHead', async function () {
