@@ -259,7 +259,8 @@ module.exports = function (app) {
    *
    */
   app.routes.get('/progress/:pkg/:env/:version?', auth, asynHandler(async function progressHandler(req, res) {
-    let { pkg, env, version } = req.params;
+    const { pkg, env } = req.params;
+    let { version } = req.params;
     let head;
 
     if (!version) head = await app.models.StatusHead.findOne({ pkg, env });

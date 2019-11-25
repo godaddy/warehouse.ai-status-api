@@ -68,8 +68,8 @@ describe('Status-Handler', function () {
           .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] }});
         const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
         const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
-        assume(findAllStub).is.calledWith({ pkg, version, env });
-        assume(packagesGetStub).is.calledWith({ pkg, version, env });
+        assume(findAllStub).was.calledWith({ pkg, version, env });
+        assume(packagesGetStub).was.calledWith({ pkg, version, env });
         assume(result).equals(true);
       });
 
@@ -87,8 +87,8 @@ describe('Status-Handler', function () {
           .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] }});
         const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
         const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
-        assume(findAllStub).is.calledWith({ pkg, version, env });
-        assume(packagesGetStub).is.calledWith({ pkg, version, env });
+        assume(findAllStub).was.calledWith({ pkg, version, env });
+        assume(packagesGetStub).was.calledWith({ pkg, version, env });
         assume(result).equals(false);
       });
 
@@ -103,8 +103,8 @@ describe('Status-Handler', function () {
           .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB', 'pt-BR'] }});
         const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
         const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
-        assume(findAllStub).is.calledWith({ pkg, version, env });
-        assume(packagesGetStub).is.calledWith({ pkg, version, env });
+        assume(findAllStub).was.calledWith({ pkg, version, env });
+        assume(packagesGetStub).was.calledWith({ pkg, version, env });
         assume(result).equals(false);
       });
     });
@@ -175,40 +175,43 @@ describe('Status-Handler', function () {
         assume(transformed.env).exists();
         assume(transformed.version).exists();
         assume(transformed.pkg).exists();
-
       });
     });
 
     describe('event', function () {
       it('should handle an initial event message', async function () {
-        const eventstub = sinon.stub(status.models.StatusEvent, 'create').resolves();
-        const statfindstub = sinon.stub(status.models.Status, 'findOne').resolves();
-        const headfindstub = sinon.stub(status.models.StatusHead, 'findOne').resolves();
-        const statcreatestub = sinon.stub(status.models.Status, 'create').resolves();
-        const headcreatestub = sinon.stub(status.models.StatusHead, 'create').resolves();
+        const eventStub = sinon.stub(status.models.StatusEvent, 'create').resolves();
+        const eventFindAllStub = sinon.stub(status.models.StatusEvent, 'findAll').resolves();
+        const statFindStub = sinon.stub(status.models.Status, 'findOne').resolves();
+        const headFindStub = sinon.stub(status.models.StatusHead, 'findOne').resolves();
+        const statCreateStub = sinon.stub(status.models.Status, 'create').resolves();
+        const headCreateStub = sinon.stub(status.models.StatusHead, 'create').resolves();
 
         await status.event(fixtures.singleEvent);
-        assume(eventstub).is.called(1);
-        assume(statfindstub).is.called(1);
-        assume(headfindstub).is.called(1);
-        assume(statcreatestub).is.called(1);
-        assume(headcreatestub).is.called(1);
+        assume(eventStub).was.called(1);
+        assume(eventFindAllStub).was.called(1);
+        assume(statFindStub).was.called(1);
+        assume(headFindStub).was.called(1);
+        assume(statCreateStub).was.called(1);
+        assume(headCreateStub).was.called(1);
       });
 
       it('should not create status when there is already a current Status record', async function () {
         const statusMock = status._transform(fixtures.singleEvent, 'status');
-        const eventstub = sinon.stub(status.models.StatusEvent, 'create').resolves();
-        const statfindstub = sinon.stub(status.models.Status, 'findOne').resolves(statusMock);
-        const headfindstub = sinon.stub(status.models.StatusHead, 'findOne').resolves(statusMock);
-        const statcreatestub = sinon.stub(status.models.Status, 'create').resolves();
-        const headcreatestub = sinon.stub(status.models.StatusHead, 'create').resolves();
+        const eventStub = sinon.stub(status.models.StatusEvent, 'create').resolves();
+        const eventFindAllStub = sinon.stub(status.models.StatusEvent, 'findAll').resolves();
+        const statFindStub = sinon.stub(status.models.Status, 'findOne').resolves(statusMock);
+        const headFindStub = sinon.stub(status.models.StatusHead, 'findOne').resolves(statusMock);
+        const statCreateStub = sinon.stub(status.models.Status, 'create').resolves();
+        const headCreateStub = sinon.stub(status.models.StatusHead, 'create').resolves();
 
         await status.event(fixtures.singleEvent);
-        assume(eventstub).is.called(1);
-        assume(statfindstub).is.called(1);
-        assume(headfindstub).is.called(1);
-        assume(statcreatestub).is.not.called();
-        assume(headcreatestub).is.not.called();
+        assume(eventStub).was.called(1);
+        assume(eventFindAllStub).was.called(1);
+        assume(statFindStub).was.called(1);
+        assume(headFindStub).was.called(1);
+        assume(statCreateStub).was.not.called();
+        assume(headCreateStub).was.not.called();
       });
 
       it('should error when any database call errors', async function () {
@@ -392,8 +395,6 @@ describe('Status-Handler', function () {
         .socketDelay(8000) // Idle connection to simulate a socket timeout
         .reply(504);
 
-      const { Status, StatusHead, StatusEvent } = handler.models;
-      const spec = handler._transform(fixtures.singleQueued, 'counter');
       await handler.event(fixtures.singleEvent);
       await handler.queued(fixtures.singleQueued);
 
@@ -414,12 +415,8 @@ describe('Status-Handler', function () {
       assume(notificationsNock.isDone()).equals(true);
 
       // Restore _sendWebhook
+      // eslint-disable-next-line require-atomic-updates
       handler._sendWebhook = sendWebhook;
-      await Promise.all([
-        Status.remove(spec),
-        StatusHead.remove(spec),
-        StatusEvent.remove(spec)
-      ]);
     });
 
     it('should handle setting previous version when we have one as StatusHead', async function () {

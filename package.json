@@ -1,6 +1,6 @@
 {
   "name": "warehouse.ai-status-api",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Status and build logs management for the warehouse system",
   "main": "index.js",
   "bin": {
@@ -8,9 +8,9 @@
   },
   "scripts": {
     "pretest": "npm run swagger",
-    "test": "nyc --reporter=lcov --reporter=text mocha --require test/setup test/*.test.js --timeout 10000",
+    "test": "AWS_SECRET_ACCESS_KEY=secret AWS_ACCESS_KEY_ID=key nyc --reporter=lcov --reporter=text mocha test/*.test.js --timeout 10000",
     "lint": "eslint-godaddy *.js \"{preboots,routes,test}/**/*.js\"",
-    "localstack": "docker run -it -p 4569:4569 --rm localstack/localstack",
+    "localstack": "docker run -it -p 4569:4569 -e SERVICES=dynamodb --rm localstack/localstack",
     "prepublishOnly": "npm run swagger",
     "swagger": "swagger-jsdoc -d swagger/definition.js -o swagger/documentation.json",
     "posttest": "npm run lint"
@@ -39,6 +39,7 @@
     "nsq.js-k8": "^1.1.3",
     "p-limit": "^2.2.1",
     "parallel-transform": "^1.1.0",
+    "request-promise-native": "^1.0.8",
     "rip-out": "^1.0.0",
     "slay": "^1.1.0",
     "slay-config": "^2.2.0",
@@ -54,16 +55,15 @@
   "devDependencies": {
     "assume": "^2.2.0",
     "assume-sinon": "^1.0.1",
-    "eslint": "^4.19.1",
-    "eslint-config-godaddy": "^2.1.0",
+    "eslint": "^6.7.0",
+    "eslint-config-godaddy": "^4.0.0",
     "eslint-plugin-json": "^1.2.0",
-    "eslint-plugin-mocha": "^5.0.0",
+    "eslint-plugin-mocha": "^6.2.2",
     "json-refs": "^3.0.12",
-    "mocha": "^5.2.0",
+    "mocha": "^6.2.2",
     "nock": "^11.7.0",
-    "nyc": "^12.0.2",
+    "nyc": "^14.1.1",
     "request": "^2.87.0",
-    "request-promise-native": "^1.0.5",
-    "sinon": "^6.0.1"
+    "sinon": "^7.5.0"
   }
 }
