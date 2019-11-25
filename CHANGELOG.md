@@ -1,5 +1,7 @@
 # CHANGELOG
 
+- Fix Travis CI
+
 ### 2.0.2
 
 - `request-promise-native` should be a regular dep
@@ -23,8 +25,8 @@
 - Update swagger docs to dereference for better AWS Support
 - [#11] Update `README.md` content
   - Update patch/minor version of dependencies.
-- [#10] Default documenation
-  - Add: `CONTRUBUTING.md`, `CHANGELOG.md`, `SECURITY.md`
+- [#10] Default documentation
+  - Add: `CONTRIBUTING.md`, `CHANGELOG.md`, `SECURITY.md`
   - update `LICENSE` year
   - add `.github` templates
   - Give credits for Github templates
