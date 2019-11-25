@@ -1,6 +1,6 @@
 {
   "name": "warehouse.ai-status-api",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Status and build logs management for the warehouse system",
   "main": "index.js",
   "bin": {
