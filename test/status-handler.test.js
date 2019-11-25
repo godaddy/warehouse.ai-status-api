@@ -80,7 +80,7 @@ describe('Status-Handler', function () {
         assume(shouldSendStub).is.calledWith(pkg);
         assume(isBuildStub).is.calledWith(fixtures.singleEvent);
         assume(sendStub).is.calledWith({ pkg, version, env, event: 'build_started', repository });
-        assume(packagesGetStub).is.calledWith({ pkg, version, env });
+        assume(packagesGetStub).is.calledWith({ pkg });
       });
     });
 
