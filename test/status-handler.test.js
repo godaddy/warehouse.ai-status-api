@@ -55,22 +55,9 @@ describe('Status-Handler', function () {
       });
     });
 
-    describe('_isBuildQueued', function () {
-      it('should detect the build is queued', async function () {
-        const result = status._isBuildQueued(fixtures.singleQueued);
-        assume(result).equals(true);
-      });
-
-      it('should detect the build is not queued', async function () {
-        const result = status._isBuildQueued(fixtures.singleFetchedTarball);
-        assume(result).equals(false);
-      });
-    });
-
     describe('_dispatchWebhook', function () {
       it('should dispatch build_started webhook', async function () {
         const shouldSendStub = sinon.stub(status, '_shouldSendWebhook').resolves(true);
-        const isBuildStub = sinon.stub(status, '_isBuildQueued').resolves(true);
         const sendStub = sinon.stub(status, '_sendWebhook').resolves();
         const repository = { url: 'repo.git' };
         const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
@@ -78,7 +65,6 @@ describe('Status-Handler', function () {
         await status._dispatchWebhook('build_started', fixtures.singleEvent);
         const { name: pkg, version, env } = fixtures.singleEvent;
         assume(shouldSendStub).is.calledWith(pkg);
-        assume(isBuildStub).is.calledWith(fixtures.singleEvent);
         assume(sendStub).is.calledWith({ pkg, version, env, event: 'build_started', repository });
         assume(packagesGetStub).is.calledWith({ pkg });
       });

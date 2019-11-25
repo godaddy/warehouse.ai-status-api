@@ -16,7 +16,6 @@ const DEFAULT_WEBHOOKS_CONCURRENCY = 5;
 const DEFAULT_WEBHOOKS_TIMEOUT = 2000;
 const BUILD_COMPLETED = 'build_completed';
 const BUILD_STARTED = 'build_started';
-const MSG_BUILD_QUEUED = 'Builds Queued';
 
 /**
  * StatusHandler class for receiving messages from NSQ and taking the right
@@ -182,17 +181,6 @@ class StatusHandler {
   }
 
   /**
-   * Check if a build is in a queued status
-   *
-   * @function _isBuildQueued
-   * @param {Object} data - Message from NSQ
-   * @returns {Boolean} if the build is queued
-   */
-  _isBuildQueued(data) {
-    return data.message === MSG_BUILD_QUEUED;
-  }
-
-  /**
    * Get package name from NSQ message
    *
    * @function _getPackageName
@@ -221,10 +209,7 @@ class StatusHandler {
 
     switch (event) {
       case BUILD_COMPLETED:
-        body = { event, pkg, version, env };
-        break;
       case BUILD_STARTED:
-        if (!this._isBuildQueued(data)) return;
         body = { event, pkg, version, env };
         break;
       default:
