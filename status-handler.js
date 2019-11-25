@@ -186,7 +186,7 @@ class StatusHandler {
    *
    * @function _isBuildQueued
    * @param {Object} data - Message from NSQ
-   * @returns {Boolean} if the packages is queued
+   * @returns {Boolean} if the build is queued
    */
   _isBuildQueued(data) {
     return data.message === MSG_BUILD_QUEUED;
