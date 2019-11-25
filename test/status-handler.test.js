@@ -7,6 +7,7 @@ const models = require('warehouse.ai-status-models');
 const sinon = require('sinon');
 const through = require('through2');
 const nock = require('nock');
+const Warehouse = require('warehouse.ai-api-client');
 
 const StatusHandler = require('../status-handler');
 const fixtures = require('./fixtures');
@@ -31,7 +32,8 @@ describe('Status-Handler', function () {
               'http://example.com/webhooks'
             ]
           }
-        }
+        },
+        wrhs: new Warehouse('https://my.warehouse.endpoint.com')
       });
     });
 
@@ -50,6 +52,60 @@ describe('Status-Handler', function () {
       it('should check if a package has registered endpoints', function () {
         assume(status._shouldSendWebhook('whatever')).equals(true);
         assume(status._shouldSendWebhook('whatever2')).equals(false);
+      });
+    });
+
+    describe('_isBuildCompleted', function () {
+      it('should detect the build is completed', async function () {
+        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
+          .resolves([
+            fixtures.whateverEnUSTarball,
+            fixtures.whateverEnUSCompleted,
+            fixtures.whateverEnGBTarball,
+            fixtures.whateverEnGBCompleted
+          ]);
+        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
+          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] } });
+        const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
+        const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
+        assume(findAllStub).was.calledWith({ pkg, version, env });
+        assume(packagesGetStub).was.calledWith({ pkg, version, env });
+        assume(result).equals(true);
+      });
+
+      it('should not detect the build completed more than once', async function () {
+        // WE DO NOT WANT TO SEND A WEBHOOK MULTIPLE TIMES
+        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
+          .resolves([
+            fixtures.whateverEnUSTarball,
+            fixtures.whateverEnUSCompleted,
+            fixtures.whateverEnGBTarball,
+            fixtures.whateverEnGBCompleted,
+            fixtures.whateverEnGBCompleted
+          ]);
+        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
+          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] } });
+        const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
+        const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
+        assume(findAllStub).was.calledWith({ pkg, version, env });
+        assume(packagesGetStub).was.calledWith({ pkg, version, env });
+        assume(result).equals(false);
+      });
+
+      it('should detect the build is not completed', async function () {
+        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
+          .resolves([
+            fixtures.whateverEnUSTarball,
+            fixtures.whateverEnUSCompleted,
+            fixtures.whateverEnGBTarball
+          ]);
+        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
+          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB', 'pt-BR'] } });
+        const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
+        const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
+        assume(findAllStub).was.calledWith({ pkg, version, env });
+        assume(packagesGetStub).was.calledWith({ pkg, version, env });
+        assume(result).equals(false);
       });
     });
 
@@ -207,17 +263,22 @@ describe('Status-Handler', function () {
     describe('complete', function () {
       it('should increment counter, see if is complete, and update status when it sees it is', async function () {
         const statusupdatestub = sinon.stub(status.models.Status, 'update').resolves();
+        const eventFindAllStub = sinon.stub(status.models.StatusEvent, 'findAll').resolves();
         const statuseventcreatestub = sinon.stub(status.models.StatusEvent, 'create').resolves();
         const statuscounterfindstub = sinon.stub(status.models.StatusCounter, 'findOne').resolves(fixtures.singleCompleteCounter);
         const statusfindstub = sinon.stub(status.models.Status, 'findOne').resolves(fixtures.singleCompleteStatus);
         const statuscounterincstub = sinon.stub(status.models.StatusCounter, 'increment').resolves();
+        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
+          .callsArgWith(1, null, { extended: {} });
 
         await status.complete(fixtures.singleComplete);
         assume(statuscounterincstub).is.called(1);
+        assume(eventFindAllStub).is.called(1);
         assume(statuscounterfindstub).is.called(1);
         assume(statusfindstub).is.called(1);
         assume(statusupdatestub).is.called(1);
         assume(statuseventcreatestub).is.called(1);
+        assume(packagesGetStub).is.called(0);
       });
 
       it('should error if a database call errors', async function () {
@@ -255,7 +316,18 @@ describe('Status-Handler', function () {
             ]
           }
         },
-        conc: 1
+        conc: 1,
+        wrhs: {
+          packages: {
+            get(_, cb) {
+              cb({
+                extended: {
+                  locales: ['en-US', 'fr-FR', 'pt-PT']
+                }
+              });
+            }
+          }
+        }
       });
       await liveness.waitForServices({
         clients: [dynamoDriver],

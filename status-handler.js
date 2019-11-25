@@ -14,6 +14,7 @@ const defaultLogger = {
 
 const DEFAULT_WEBHOOKS_CONCURRENCY = 5;
 const DEFAULT_WEBHOOKS_TIMEOUT = 2000;
+const BUILD_COMPLETED = 'build_completed';
 const BUILD_STARTED = 'build_started';
 const MSG_BUILD_QUEUED = 'Builds Queued';
 const MSG_FETCHED_TARBALL = 'Fetched tarball';
@@ -35,6 +36,7 @@ class StatusHandler {
     this.conc = opts.conc || 10;
     this.log = opts.log || defaultLogger;
     this.webhooks = opts.webhooks || { endpoints: {} };
+    this.wrhs = opts.wrhs;
   }
 
   /**
@@ -80,6 +82,7 @@ class StatusHandler {
       });
     }
   }
+
   /**
    * Handle error message from carpenterd or carpenterd-worker
    *
@@ -141,6 +144,12 @@ class StatusHandler {
     const complete = await this.isComplete(spec);
 
     if (!complete) return;
+
+    this._dispatchWebhook(BUILD_COMPLETED, data)
+      .catch(err => {
+        this.log.error('Dispatch webhook errored %s', err.message, data);
+      });
+
     // Overwrite error: true if it was set to error before, since the errored build
     // must have resolved if we get here
     return Status.update({ ...spec, complete, error: false });
@@ -171,6 +180,46 @@ class StatusHandler {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Check if a build is completed for all locales
+   *
+   * @function _isBuildCompleted
+   * @param {Object} data - Message from NSQ
+   * @returns {String} the package name
+   */
+  async _isBuildCompleted(data) {
+    const { version, env, locale } = data;
+    const pkg = this._getPackageName(data);
+
+    const [previousEvents, locales] = await Promise.all([
+      this.models.StatusEvent.findAll({
+        pkg, version, env
+      }),
+      new Promise((resolve, reject) => {
+        this.wrhs.packages.get({ pkg, version, env }, (err, result) => {
+          if (err) return reject(err);
+          resolve(result.extended.locales || []);
+        });
+      })
+    ]);
+
+    const completedLocales = previousEvents
+      .filter(event => event.message === 'carpenterd-worker build completed')
+      .map(event => event.locale);
+
+    const numOfCompletedLocales = (Array.from(new Set(completedLocales))).length;
+
+    // All locales completed and no duplicates
+    if (
+      numOfCompletedLocales === locales.length &&
+      completedLocales.filter(lc => lc === locale).length === 1
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -247,6 +296,10 @@ class StatusHandler {
     let body;
 
     switch (event) {
+      case BUILD_COMPLETED:
+        if (!await this._isBuildCompleted(data)) return;
+        body = { event, pkg, version, env };
+        break;
       case BUILD_STARTED:
         if (!await this._isBuildQueued(data)) return;
         body = { event, pkg, version, env };
