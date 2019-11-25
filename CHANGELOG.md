@@ -1,5 +1,7 @@
 # CHANGELOG
 
+### 2.1.0
+
 - Add build_completed webhook type
 - Fix Travis CI
 
