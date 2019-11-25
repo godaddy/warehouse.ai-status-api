@@ -35,7 +35,7 @@ class StatusHandler {
     this.progress = opts.progress || new Progress(this.models);
     this.conc = opts.conc || 10;
     this.log = opts.log || defaultLogger;
-    this.webhooks = opts.webhooks || { endpoints: {}};
+    this.webhooks = opts.webhooks || { endpoints: {} };
     this.wrhs = opts.wrhs;
   }
 

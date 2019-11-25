@@ -65,7 +65,7 @@ describe('Status-Handler', function () {
             fixtures.whateverEnGBCompleted
           ]);
         const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
-          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] }});
+          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] } });
         const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
         const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
         assume(findAllStub).was.calledWith({ pkg, version, env });
@@ -84,7 +84,7 @@ describe('Status-Handler', function () {
             fixtures.whateverEnGBCompleted
           ]);
         const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
-          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] }});
+          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] } });
         const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
         const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
         assume(findAllStub).was.calledWith({ pkg, version, env });
@@ -100,7 +100,7 @@ describe('Status-Handler', function () {
             fixtures.whateverEnGBTarball
           ]);
         const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
-          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB', 'pt-BR'] }});
+          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB', 'pt-BR'] } });
         const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
         const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
         assume(findAllStub).was.calledWith({ pkg, version, env });
@@ -263,17 +263,22 @@ describe('Status-Handler', function () {
     describe('complete', function () {
       it('should increment counter, see if is complete, and update status when it sees it is', async function () {
         const statusupdatestub = sinon.stub(status.models.Status, 'update').resolves();
+        const eventFindAllStub = sinon.stub(status.models.StatusEvent, 'findAll').resolves();
         const statuseventcreatestub = sinon.stub(status.models.StatusEvent, 'create').resolves();
         const statuscounterfindstub = sinon.stub(status.models.StatusCounter, 'findOne').resolves(fixtures.singleCompleteCounter);
         const statusfindstub = sinon.stub(status.models.Status, 'findOne').resolves(fixtures.singleCompleteStatus);
         const statuscounterincstub = sinon.stub(status.models.StatusCounter, 'increment').resolves();
+        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
+          .callsArgWith(1, null, { extended: {} });
 
         await status.complete(fixtures.singleComplete);
         assume(statuscounterincstub).is.called(1);
+        assume(eventFindAllStub).is.called(1);
         assume(statuscounterfindstub).is.called(1);
         assume(statusfindstub).is.called(1);
         assume(statusupdatestub).is.called(1);
         assume(statuseventcreatestub).is.called(1);
+        assume(packagesGetStub).is.called(0);
       });
 
       it('should error if a database call errors', async function () {
