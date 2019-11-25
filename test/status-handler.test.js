@@ -55,76 +55,14 @@ describe('Status-Handler', function () {
       });
     });
 
-    describe('_isBuildCompleted', function () {
-      it('should detect the build is completed', async function () {
-        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
-          .resolves([
-            fixtures.whateverEnUSTarball,
-            fixtures.whateverEnUSCompleted,
-            fixtures.whateverEnGBTarball,
-            fixtures.whateverEnGBCompleted
-          ]);
-        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
-          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] } });
-        const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
-        const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
-        assume(findAllStub).was.calledWith({ pkg, version, env });
-        assume(packagesGetStub).was.calledWith({ pkg, version, env });
-        assume(result).equals(true);
-      });
-
-      it('should not detect the build completed more than once', async function () {
-        // WE DO NOT WANT TO SEND A WEBHOOK MULTIPLE TIMES
-        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
-          .resolves([
-            fixtures.whateverEnUSTarball,
-            fixtures.whateverEnUSCompleted,
-            fixtures.whateverEnGBTarball,
-            fixtures.whateverEnGBCompleted,
-            fixtures.whateverEnGBCompleted
-          ]);
-        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
-          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB'] } });
-        const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
-        const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
-        assume(findAllStub).was.calledWith({ pkg, version, env });
-        assume(packagesGetStub).was.calledWith({ pkg, version, env });
-        assume(result).equals(false);
-      });
-
-      it('should detect the build is not completed', async function () {
-        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
-          .resolves([
-            fixtures.whateverEnUSTarball,
-            fixtures.whateverEnUSCompleted,
-            fixtures.whateverEnGBTarball
-          ]);
-        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
-          .callsArgWith(1, null, { extended: { locales: ['en-US', 'en-GB', 'pt-BR'] } });
-        const { name: pkg, version, env } = fixtures.whateverEnGBCompleted;
-        const result = await status._isBuildCompleted(fixtures.whateverEnGBCompleted);
-        assume(findAllStub).was.calledWith({ pkg, version, env });
-        assume(packagesGetStub).was.calledWith({ pkg, version, env });
-        assume(result).equals(false);
-      });
-    });
-
     describe('_isBuildQueued', function () {
       it('should detect the build is queued', async function () {
-        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
-          .resolves([fixtures.secondEvent, fixtures.singleQueued, fixtures.singleFetchedTarball]);
-        const { name: pkg, version, env } = fixtures.singleFetchedTarball;
-        const result = await status._isBuildQueued(fixtures.singleFetchedTarball);
-        assume(findAllStub).is.calledWith({ pkg, version, env });
+        const result = status._isBuildQueued(fixtures.singleQueued);
         assume(result).equals(true);
       });
 
       it('should detect the build is not queued', async function () {
-        const findAllStub = sinon.stub(status.models.StatusEvent, 'findAll')
-          .resolves([fixtures.secondEvent, fixtures.singleFetchedTarball]);
-        const { name: pkg, version, env } = fixtures.singleFetchedTarball;
-        const result = await status._isBuildQueued(fixtures.singleFetchedTarball);
-        assume(findAllStub).is.calledWith({ pkg, version, env });
+        const result = status._isBuildQueued(fixtures.singleFetchedTarball);
         assume(result).equals(false);
       });
     });
@@ -134,11 +72,15 @@ describe('Status-Handler', function () {
         const shouldSendStub = sinon.stub(status, '_shouldSendWebhook').resolves(true);
         const isBuildStub = sinon.stub(status, '_isBuildQueued').resolves(true);
         const sendStub = sinon.stub(status, '_sendWebhook').resolves();
+        const repository = { url: 'repo.git' };
+        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
+          .callsArgWith(1, null, { extended: { repository } });
         await status._dispatchWebhook('build_started', fixtures.singleEvent);
         const { name: pkg, version, env } = fixtures.singleEvent;
         assume(shouldSendStub).is.calledWith(pkg);
         assume(isBuildStub).is.calledWith(fixtures.singleEvent);
-        assume(sendStub).is.calledWith({ pkg, version, env, event: 'build_started' });
+        assume(sendStub).is.calledWith({ pkg, version, env, event: 'build_started', repository });
+        assume(packagesGetStub).is.calledWith({ pkg, version, env });
       });
     });
 
@@ -181,7 +123,6 @@ describe('Status-Handler', function () {
     describe('event', function () {
       it('should handle an initial event message', async function () {
         const eventStub = sinon.stub(status.models.StatusEvent, 'create').resolves();
-        const eventFindAllStub = sinon.stub(status.models.StatusEvent, 'findAll').resolves();
         const statFindStub = sinon.stub(status.models.Status, 'findOne').resolves();
         const headFindStub = sinon.stub(status.models.StatusHead, 'findOne').resolves();
         const statCreateStub = sinon.stub(status.models.Status, 'create').resolves();
@@ -189,7 +130,6 @@ describe('Status-Handler', function () {
 
         await status.event(fixtures.singleEvent);
         assume(eventStub).was.called(1);
-        assume(eventFindAllStub).was.called(1);
         assume(statFindStub).was.called(1);
         assume(headFindStub).was.called(1);
         assume(statCreateStub).was.called(1);
@@ -199,7 +139,6 @@ describe('Status-Handler', function () {
       it('should not create status when there is already a current Status record', async function () {
         const statusMock = status._transform(fixtures.singleEvent, 'status');
         const eventStub = sinon.stub(status.models.StatusEvent, 'create').resolves();
-        const eventFindAllStub = sinon.stub(status.models.StatusEvent, 'findAll').resolves();
         const statFindStub = sinon.stub(status.models.Status, 'findOne').resolves(statusMock);
         const headFindStub = sinon.stub(status.models.StatusHead, 'findOne').resolves(statusMock);
         const statCreateStub = sinon.stub(status.models.Status, 'create').resolves();
@@ -207,7 +146,6 @@ describe('Status-Handler', function () {
 
         await status.event(fixtures.singleEvent);
         assume(eventStub).was.called(1);
-        assume(eventFindAllStub).was.called(1);
         assume(statFindStub).was.called(1);
         assume(headFindStub).was.called(1);
         assume(statCreateStub).was.not.called();
@@ -263,22 +201,17 @@ describe('Status-Handler', function () {
     describe('complete', function () {
       it('should increment counter, see if is complete, and update status when it sees it is', async function () {
         const statusupdatestub = sinon.stub(status.models.Status, 'update').resolves();
-        const eventFindAllStub = sinon.stub(status.models.StatusEvent, 'findAll').resolves();
         const statuseventcreatestub = sinon.stub(status.models.StatusEvent, 'create').resolves();
         const statuscounterfindstub = sinon.stub(status.models.StatusCounter, 'findOne').resolves(fixtures.singleCompleteCounter);
         const statusfindstub = sinon.stub(status.models.Status, 'findOne').resolves(fixtures.singleCompleteStatus);
         const statuscounterincstub = sinon.stub(status.models.StatusCounter, 'increment').resolves();
-        const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
-          .callsArgWith(1, null, { extended: {} });
 
         await status.complete(fixtures.singleComplete);
         assume(statuscounterincstub).is.called(1);
-        assume(eventFindAllStub).is.called(1);
         assume(statuscounterfindstub).is.called(1);
         assume(statusfindstub).is.called(1);
         assume(statusupdatestub).is.called(1);
         assume(statuseventcreatestub).is.called(1);
-        assume(packagesGetStub).is.called(0);
       });
 
       it('should error if a database call errors', async function () {
@@ -317,17 +250,7 @@ describe('Status-Handler', function () {
           }
         },
         conc: 1,
-        wrhs: {
-          packages: {
-            get(_, cb) {
-              cb({
-                extended: {
-                  locales: ['en-US', 'fr-FR', 'pt-PT']
-                }
-              });
-            }
-          }
-        }
+        wrhs: new Warehouse('https://my.warehouse.endpoint.com')
       });
       await liveness.waitForServices({
         clients: [dynamoDriver],
@@ -400,8 +323,9 @@ describe('Status-Handler', function () {
         .socketDelay(8000) // Idle connection to simulate a socket timeout
         .reply(504);
 
-      await handler.event(fixtures.singleEvent);
-      await handler.queued(fixtures.singleQueued);
+      const repository = { url: 'repo.git' };
+      const packagesGetStub = sinon.stub(handler.wrhs.packages, 'get')
+        .callsArgWith(1, null, { extended: { repository } });
 
       // Add a waiter proxy to ensure _sendWebhook completed
       // since _dispatchWebhook is not blocking the handler.event function
@@ -413,11 +337,12 @@ describe('Status-Handler', function () {
         };
       });
 
-      await handler.event(fixtures.singleFetchedTarball);
+      await handler.queued(fixtures.singleQueued);
       await waiter;
 
       assume(webhooksNock.isDone()).equals(true);
       assume(notificationsNock.isDone()).equals(true);
+      assume(packagesGetStub).is.called(1);
 
       // Restore _sendWebhook
       // eslint-disable-next-line require-atomic-updates
