@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### 2.1.2
+
+- Fix webhooks data
+
 ### 2.1.1
 
 - Add repo information to web hooks

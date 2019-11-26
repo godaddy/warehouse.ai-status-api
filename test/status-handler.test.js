@@ -59,9 +59,9 @@ describe('Status-Handler', function () {
       it('should dispatch build_started webhook', async function () {
         const shouldSendStub = sinon.stub(status, '_shouldSendWebhook').resolves(true);
         const sendStub = sinon.stub(status, '_sendWebhook').resolves();
-        const repository = { url: 'repo.git' };
+        const repository = { type: 'git', url: 'repo.git' };
         const packagesGetStub = sinon.stub(status.wrhs.packages, 'get')
-          .callsArgWith(1, null, { extended: { repository } });
+          .callsArgWith(1, null, { repository });
         await status._dispatchWebhook('build_started', fixtures.singleEvent);
         const { name: pkg, version, env } = fixtures.singleEvent;
         assume(shouldSendStub).is.calledWith(pkg);
@@ -309,9 +309,9 @@ describe('Status-Handler', function () {
         .socketDelay(8000) // Idle connection to simulate a socket timeout
         .reply(504);
 
-      const repository = { url: 'repo.git' };
+      const repository = { type: 'git', url: 'repo.git' };
       const packagesGetStub = sinon.stub(handler.wrhs.packages, 'get')
-        .callsArgWith(1, null, { extended: { repository } });
+        .callsArgWith(1, null, { repository });
 
       // Add a waiter proxy to ensure _sendWebhook completed
       // since _dispatchWebhook is not blocking the handler.event function

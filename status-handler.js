@@ -219,7 +219,7 @@ class StatusHandler {
     const repository = await new Promise((resolve, reject) => {
       this.wrhs.packages.get({ pkg }, (err, result) => {
         if (err) return reject(err);
-        resolve(result.extended.repository || {});
+        resolve(result.repository || {});
       });
     });
 
