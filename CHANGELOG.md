@@ -1,5 +1,7 @@
 # CHANGELOG
 
+### 2.1.4
+
 - Update warehouse.ai-status-models with updated dynastar
 - Fix raciness with status/statushead findOne (in theory)
 
