@@ -33,7 +33,6 @@
     "aws-liveness": "^1.1.0",
     "body-parser": "^1.19.0",
     "dynamodb-x": "^1.2.3",
-    "dynastar": "^1.2.0",
     "express-async-handler": "^1.1.3",
     "make-promises-safe": "^1.1.0",
     "nsq-stream": "^2.1.1",
@@ -51,7 +50,7 @@
     "tinythen": "^1.0.1",
     "uuid": "^3.3.0",
     "warehouse.ai-api-client": "^4.4.1",
-    "warehouse.ai-status-models": "^2.0.2"
+    "warehouse.ai-status-models": "^2.0.3"
   },
   "devDependencies": {
     "assume": "^2.2.0",
