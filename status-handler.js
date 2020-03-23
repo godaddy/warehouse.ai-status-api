@@ -64,8 +64,8 @@ class StatusHandler {
     const ev = this._transform(data, 'event');
     const [, head, current] = await Promise.all([
       StatusEvent.create(ev),
-      StatusHead.findOne(ev),
-      Status.findOne(ev)
+      StatusHead.findOne(ev, { ConsistentRead: true }),
+      Status.findOne(ev, { ConsistentRead: true })
     ]);
 
     if (!current) {
