@@ -46,7 +46,7 @@ class StatusHandler {
    * @returns {undefined} void 0
    */
   handle(msg, next) {
-    if (!this[msg.eventType] || typeof this[msg.eventType] !== 'function') {
+    if (typeof this[msg.eventType] !== 'function') {
       this.log('Invalid message sent, ignoring', msg);
       return void next();
     }
