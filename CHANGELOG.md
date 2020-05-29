@@ -1,5 +1,7 @@
 # CHANGELOG
 
+- Don't let invalid message type break status-handler
+
 ### 2.1.4
 
 - Update warehouse.ai-status-models with updated dynastar
