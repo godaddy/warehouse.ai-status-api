@@ -1,5 +1,7 @@
 # CHANGELOG
 
+### 2.1.5
+
 - Don't let invalid message type break status-handler
 
 ### 2.1.4
