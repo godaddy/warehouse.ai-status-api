@@ -43,8 +43,13 @@ class StatusHandler {
    * @function handle
    * @param {Object} msg - Data message to be handled from NSQ
    * @param {Function} next - Continuation function
+   * @returns {undefined} void 0
    */
   handle(msg, next) {
+    if (!this[msg.eventType] || typeof this[msg.eventType] !== 'function') {
+      this.log('Invalid message sent, ignoring', msg);
+      return void next();
+    }
     this[msg.eventType](msg)
       .then(next.bind(null, null), next);
   }
