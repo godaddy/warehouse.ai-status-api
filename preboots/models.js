@@ -13,10 +13,20 @@ const statusModels = require('warehouse.ai-status-models');
  */
 module.exports = function modelboot(app, options, callback) {
   const ensure = app.config.get('ensure') || options.ensure;
+  const config = app.config.get('database');
+  const region = app.config.get('DATABASE_REGION')
+    || app.config.get('AWS_DEFAULT_REGION')
+    || config.region
+    || options.region;
 
-  const dynamoDriver = new AWS.DynamoDB(app.config.get('database'));
+  const dynamoDriver = new AWS.DynamoDB({
+    ...config,
+    region
+  });
+
   dynamodb.dynamoDriver(dynamoDriver);
   app.models = statusModels(dynamodb);
+
   const liveness = new AwsLiveness();
   liveness.waitForServices({
     clients: [dynamoDriver],
