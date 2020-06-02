@@ -1,5 +1,7 @@
 # CHANGELOG
 
+### 2.1.6
+
 - Add env based configuration for database region
 - Fix bug in status-handler
 
