@@ -13,7 +13,9 @@
     "localstack": "docker run -it -p 4569:4569 -e SERVICES=dynamodb --rm localstack/localstack",
     "prepublishOnly": "npm run swagger",
     "swagger": "swagger-jsdoc -d swagger/definition.js -o swagger/documentation.json",
-    "posttest": "npm run lint"
+    "posttest": "npm run lint",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "keywords": [
     "warehouse.ai",
@@ -50,7 +52,8 @@
     "tinythen": "^1.0.1",
     "uuid": "^3.3.0",
     "warehouse.ai-api-client": "^4.4.1",
-    "warehouse.ai-status-models": "^2.0.3"
+    "warehouse.ai-status-models": "^2.0.3",
+    "snyk": "^1.316.1"
   },
   "devDependencies": {
     "assume": "^2.2.0",
@@ -65,5 +68,6 @@
     "nyc": "^14.1.1",
     "request": "^2.87.0",
     "sinon": "^7.5.0"
-  }
+  },
+  "snyk": true
 }
