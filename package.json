@@ -12,7 +12,7 @@
     "lint": "eslint-godaddy *.js \"{preboots,routes,test}/**/*.js\"",
     "localstack": "docker run -it -p 4569:4569 -e SERVICES=dynamodb --rm localstack/localstack",
     "prepublishOnly": "npm run swagger",
-    "swagger": "swagger-jsdoc -d swagger/definition.js -o swagger/documentation.json",
+    "swagger": "bin/swagger",
     "posttest": "npm run lint"
   },
   "keywords": [
