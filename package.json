@@ -43,7 +43,7 @@
     "rip-out": "^1.0.0",
     "slay": "^1.1.0",
     "slay-config": "^2.2.0",
-    "slay-log": "^2.3.0",
+    "slay-log": "^2.3.2",
     "swagger-jsdoc": "^3.2.9",
     "swagger-ui-express": "^4.0.4",
     "through2": "^3.0.1",
