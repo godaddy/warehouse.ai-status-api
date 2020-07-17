@@ -37,7 +37,7 @@
     "make-promises-safe": "^1.1.0",
     "nsq-stream": "^2.1.1",
     "nsq.js-k8": "^1.2.1",
-    "p-limit": "^2.2.1",
+    "p-limit": "^2.2.2",
     "parallel-transform": "^1.1.0",
     "request-promise-native": "^1.0.8",
     "rip-out": "^1.0.0",
