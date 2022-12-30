@@ -60,7 +60,7 @@
     "eslint-plugin-json": "^1.2.0",
     "eslint-plugin-mocha": "^6.2.2",
     "json-refs": "^3.0.12",
-    "mocha": "^6.2.2",
+    "mocha": "^10.2.0",
     "nock": "^11.7.0",
     "nyc": "^14.1.1",
     "request": "^2.87.0",
