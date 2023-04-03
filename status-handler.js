@@ -255,7 +255,7 @@ class StatusHandler {
       // Do not fail the other webhook requests if one fais
       try {
         await request({ uri, ...params });
-        this.log.error(`Webhook for package ${pkg} sent to ${uri}`);
+        this.log.info(`Webhook for package ${pkg} sent to ${uri}`);
       } catch (err) {
         this.log.error(`Failed sending webhook for package %s`, body.pkg, body);
       }
