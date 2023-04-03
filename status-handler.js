@@ -182,7 +182,7 @@ class StatusHandler {
       this.log.info(`No webhook endpoints for pkg ${pkg}`);
       return false;
     }
-    this.log.info(`Found ${endpoints.length} for package ${pkg}`);
+    this.log.info(`Found ${endpoints.length} endpoints: ${JSON.stringify(endpoints)} for package ${pkg}`);
     return true;
   }
 
