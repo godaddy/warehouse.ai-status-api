@@ -182,6 +182,7 @@ class StatusHandler {
       this.log.info(`No webhook endpoints for pkg ${pkg}`);
       return false;
     }
+    this.log.info(`Found ${endpoints.length} endpoints: ${JSON.stringify(endpoints)} for package ${pkg}`);
     return true;
   }
 
@@ -254,6 +255,7 @@ class StatusHandler {
       // Do not fail the other webhook requests if one fais
       try {
         await request({ uri, ...params });
+        this.log.info(`Webhook ${body.event} for package ${pkg} sent to ${uri}`);
       } catch (err) {
         this.log.error(`Failed sending webhook for package %s`, body.pkg, body);
       }
