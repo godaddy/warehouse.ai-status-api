@@ -49,7 +49,7 @@
     "through2": "^3.0.1",
     "tinythen": "^1.0.1",
     "uuid": "^3.3.0",
-    "warehouse.ai-api-client": "^4.4.1",
+    "warehouse.ai-api-client": "^5.0.0",
     "warehouse.ai-status-models": "^2.0.3"
   },
   "devDependencies": {
