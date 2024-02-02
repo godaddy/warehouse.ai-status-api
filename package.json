@@ -39,7 +39,7 @@
     "nsq.js-k8": "^1.2.1",
     "p-limit": "^2.2.1",
     "parallel-transform": "^1.1.0",
-    "request-promise-native": "^1.0.8",
+    "request-promise-native": "^1.0.9",
     "rip-out": "^1.0.0",
     "slay": "^1.1.0",
     "slay-config": "^2.2.0",
